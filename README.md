@@ -6,6 +6,7 @@ A comprehensive CRM system built with Flask, featuring AI-powered lead generatio
 - **Test Deployment**: CI/CD pipeline setup completed
 - **Deployment Date**: $(date)
 - **Status**: Ready for automated deployment
+- **FTP Secrets**: Configured for Hostinger deployment
 
 ## Features
 
