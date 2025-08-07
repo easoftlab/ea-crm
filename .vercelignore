@@ -1,0 +1,75 @@
+# Exclude large directories and files from Vercel deployment
+
+# Development and test files
+tests/
+docs/
+portfolio_screenshots/
+migrations/
+
+# Deployment and backup files
+deploy/
+deploy_*.zip
+crm_upload_*.zip
+deploy_20250801_*/
+crm_upload_20250801_*/
+
+# Database files
+instance/
+*.db
+*.sqlite
+*.sqlite3
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Node modules (if any)
+node_modules/
+
+# Large media files
+app/static/uploads/
+app/static/images/
+*.mp4
+*.avi
+*.mov
+*.wmv
+
+# Log files
+*.log
+logs/
+
+# Environment files
+.env
+.env.local
+
+# Git files
+.git/
+.gitignore
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+tmp/
+
+# Large data files
+*.csv
+*.xlsx
+*.xls
+data/
+datasets/
+
+# Chrome profile (if exists)
+chrome_profile/ 
