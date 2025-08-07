@@ -15,10 +15,5 @@
   "env": {
     "FLASK_ENV": "production",
     "FLASK_APP": "wsgi.py"
-  },
-  "functions": {
-    "wsgi.py": {
-      "runtime": "python3.9"
-    }
   }
 } 
