@@ -57,6 +57,25 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
     
+    - name: Debug - Check secrets
+      run: |
+        echo "🔍 Checking GitHub secrets..."
+        if [ -n "${{ secrets.FTP_SERVER }}" ]; then
+          echo "✅ FTP_SERVER is set"
+        else
+          echo "❌ FTP_SERVER is NOT set"
+        fi
+        if [ -n "${{ secrets.FTP_USERNAME }}" ]; then
+          echo "✅ FTP_USERNAME is set"
+        else
+          echo "❌ FTP_USERNAME is NOT set"
+        fi
+        if [ -n "${{ secrets.FTP_PASSWORD }}" ]; then
+          echo "✅ FTP_PASSWORD is set"
+        else
+          echo "❌ FTP_PASSWORD is NOT set"
+        fi
+    
     - name: Create deployment package
       run: |
         echo "Creating deployment package..."
