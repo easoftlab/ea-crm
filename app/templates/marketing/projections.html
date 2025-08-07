@@ -1,0 +1,335 @@
+{% extends "base.html" %}
+{% block title %}Marketing Projections{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">Marketing Projections</h1>
+            <p class="text-muted">View and manage marketing team projections</p>
+        </div>
+        <div>
+            <a href="{{ url_for('marketing.dashboard') }}" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Team Totals Overview -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5 class="card-title text-primary">
+                        <i class="fas fa-bullseye"></i> Leads Target
+                    </h5>
+                    <h2 class="text-primary">{{ team_totals.leads.target }}</h2>
+                    <p class="text-muted mb-0">Target for this month</p>
+                    <div class="progress mt-2" style="height: 8px;">
+                        {% set lead_percentage = (team_totals.leads.actual / team_totals.leads.target * 100) if team_totals.leads.target > 0 else 0 %}
+                        <div class="progress-bar bg-primary" style="width: {{ lead_percentage }}%"></div>
+                    </div>
+                    <small class="text-muted">{{ team_totals.leads.actual }} achieved ({{ "%.0f"|format(lead_percentage) }}%)</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5 class="card-title text-info">
+                        <i class="fas fa-phone"></i> Calls Target
+                    </h5>
+                    <h2 class="text-info">{{ team_totals.calls.target }}</h2>
+                    <p class="text-muted mb-0">Target for this month</p>
+                    <div class="progress mt-2" style="height: 8px;">
+                        {% set call_percentage = (team_totals.calls.actual / team_totals.calls.target * 100) if team_totals.calls.target > 0 else 0 %}
+                        <div class="progress-bar bg-info" style="width: {{ call_percentage }}%"></div>
+                    </div>
+                    <small class="text-muted">{{ team_totals.calls.actual }} achieved ({{ "%.0f"|format(call_percentage) }}%)</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5 class="card-title text-success">
+                        <i class="fas fa-chart-line"></i> Conversions Target
+                    </h5>
+                    <h2 class="text-success">{{ team_totals.conversions.target }}</h2>
+                    <p class="text-muted mb-0">Target for this month</p>
+                    <div class="progress mt-2" style="height: 8px;">
+                        {% set conversion_percentage = (team_totals.conversions.actual / team_totals.conversions.target * 100) if team_totals.conversions.target > 0 else 0 %}
+                        <div class="progress-bar bg-success" style="width: {{ conversion_percentage }}%"></div>
+                    </div>
+                    <small class="text-muted">{{ team_totals.conversions.actual }} achieved ({{ "%.0f"|format(conversion_percentage) }}%)</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Individual Projections -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-users"></i> Team Member Projections
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if projections %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Team Member</th>
+                            <th>Projection Type</th>
+                            <th>Target</th>
+                            <th>Actual</th>
+                            <th>Completion</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for projection in projections %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <img src="{{ projection.user.get_profile_image_url() }}" 
+                                         class="rounded-circle me-2" 
+                                         width="32" height="32" 
+                                         alt="{{ projection.user.get_full_name() }}">
+                                    <div>
+                                        <div class="fw-bold">{{ projection.user.get_full_name() }}</div>
+                                        <small class="text-muted">{{ projection.user.username }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge bg-primary">{{ projection.projection_type|title }}</span>
+                            </td>
+                            <td>
+                                <strong>{{ projection.target_value }}</strong>
+                            </td>
+                            <td>
+                                <span class="text-muted">{{ projection.actual_value }}</span>
+                            </td>
+                            <td>
+                                <div class="progress" style="height: 20px;">
+                                    {% set percentage = projection.completion_percentage %}
+                                    {% if percentage >= 100 %}
+                                        <div class="progress-bar bg-success" style="width: 100%">{{ "%.0f"|format(percentage) }}%</div>
+                                    {% elif percentage >= 80 %}
+                                        <div class="progress-bar bg-warning" style="width: {{ percentage }}%">{{ "%.0f"|format(percentage) }}%</div>
+                                    {% else %}
+                                        <div class="progress-bar bg-danger" style="width: {{ percentage }}%">{{ "%.0f"|format(percentage) }}%</div>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                {% if projection.status == 'active' %}
+                                    <span class="badge bg-success">Active</span>
+                                {% elif projection.status == 'completed' %}
+                                    <span class="badge bg-info">Completed</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Cancelled</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <button type="button" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary">
+                                        <i class="fas fa-chart-bar"></i> View
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No projections found</h5>
+                <p class="text-muted">Create projections to track team performance goals</p>
+                <button type="button" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Create Projection
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Projection Analytics -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-bar text-primary"></i> Projection Completion Rates
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="completionChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-pie text-success"></i> Projection Type Distribution
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="typeChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Projection Trends -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-line text-info"></i> Monthly Projection Trends
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="trendChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Projection Completion Rates Chart
+const completionCtx = document.getElementById('completionChart').getContext('2d');
+const completionChart = new Chart(completionCtx, {
+    type: 'bar',
+    data: {
+        labels: [{% for projection in projections %}'{{ projection.user.get_full_name() }}'{% if not loop.last %}, {% endif %}{% endfor %}],
+        datasets: [{
+            label: 'Completion Rate (%)',
+            data: [{% for projection in projections %}{{ projection.completion_percentage }}{% if not loop.last %}, {% endif %}{% endfor %}],
+            backgroundColor: [
+                {% for projection in projections %}
+                {% if projection.completion_percentage >= 100 %}
+                    'rgba(40, 167, 69, 0.7)'
+                {% elif projection.completion_percentage >= 80 %}
+                    'rgba(255, 193, 7, 0.7)'
+                {% else %}
+                    'rgba(220, 53, 69, 0.7)'
+                {% endif %}{% if not loop.last %}, {% endif %}
+                {% endfor %}
+            ],
+            borderColor: [
+                {% for projection in projections %}
+                {% if projection.completion_percentage >= 100 %}
+                    'rgba(40, 167, 69, 1)'
+                {% elif projection.completion_percentage >= 80 %}
+                    'rgba(255, 193, 7, 1)'
+                {% else %}
+                    'rgba(220, 53, 69, 1)'
+                {% endif %}{% if not loop.last %}, {% endif %}
+                {% endfor %}
+            ],
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true,
+                max: 100
+            }
+        },
+        plugins: {
+            legend: {
+                display: false
+            }
+        }
+    }
+});
+
+// Projection Type Distribution Chart
+const typeCtx = document.getElementById('typeChart').getContext('2d');
+const typeChart = new Chart(typeCtx, {
+    type: 'doughnut',
+    data: {
+        labels: ['Leads', 'Calls', 'Conversions', 'Revenue'],
+        datasets: [{
+            data: [
+                {{ projections|selectattr('projection_type', 'equalto', 'leads')|list|length }},
+                {{ projections|selectattr('projection_type', 'equalto', 'calls')|list|length }},
+                {{ projections|selectattr('projection_type', 'equalto', 'conversions')|list|length }},
+                {{ projections|selectattr('projection_type', 'equalto', 'revenue')|list|length }}
+            ],
+            backgroundColor: ['#28a745', '#17a2b8', '#ffc107', '#dc3545'],
+            borderWidth: 2,
+            borderColor: '#fff'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+
+// Monthly Projection Trends Chart
+const trendCtx = document.getElementById('trendChart').getContext('2d');
+const trendChart = new Chart(trendCtx, {
+    type: 'line',
+    data: {
+        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+        datasets: [{
+            label: 'Leads Target',
+            data: [150, 180, 200, 220, 250, 280],
+            borderColor: 'rgba(40, 167, 69, 1)',
+            backgroundColor: 'rgba(40, 167, 69, 0.1)',
+            tension: 0.4
+        }, {
+            label: 'Calls Target',
+            data: [300, 350, 400, 450, 500, 550],
+            borderColor: 'rgba(23, 162, 184, 1)',
+            backgroundColor: 'rgba(23, 162, 184, 0.1)',
+            tension: 0.4
+        }, {
+            label: 'Conversions Target',
+            data: [15, 18, 20, 22, 25, 28],
+            borderColor: 'rgba(255, 193, 7, 1)',
+            backgroundColor: 'rgba(255, 193, 7, 0.1)',
+            tension: 0.4
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        },
+        plugins: {
+            legend: {
+                position: 'top'
+            }
+        }
+    }
+});
+</script>
+{% endblock %} 

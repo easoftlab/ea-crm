@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% block title %}Add Team Member - Marketing{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">Add Team Member</h1>
+            <p class="text-muted">Add a new member to the marketing team</p>
+        </div>
+        <div>
+            <a href="{{ url_for('marketing.team') }}" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left"></i> Back to Team
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-user-plus"></i> Add New Team Member
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="user_id" class="form-label">Select User</label>
+                            <select class="form-select" id="user_id" name="user_id" required>
+                                <option value="">Choose a user to add to the team...</option>
+                                {% for user in available_users %}
+                                <option value="{{ user.id }}">
+                                    {{ user.get_full_name() }} ({{ user.username }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">Select a user from the available users list</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="role" class="form-label">Team Role</label>
+                            <select class="form-select" id="role" name="role">
+                                <option value="member">Team Member</option>
+                                <option value="senior">Senior Member</option>
+                                <option value="lead">Team Lead</option>
+                                <option value="specialist">Specialist</option>
+                            </select>
+                            <div class="form-text">Choose the role for this team member</div>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>Note:</strong> Adding a user to the team will give them access to marketing team features and data.
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('marketing.team') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-user-plus"></i> Add to Team
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-info-circle"></i> Team Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <strong>Team Name:</strong>
+                        <div>{{ team.name }}</div>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Current Members:</strong>
+                        <div class="text-primary">{{ team.members|length }}</div>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Available Users:</strong>
+                        <div class="text-success">{{ available_users|length }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-users"></i> Available Users
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if available_users %}
+                    <div class="list-group list-group-flush">
+                        {% for user in available_users %}
+                        <div class="list-group-item d-flex align-items-center">
+                            <img src="{{ user.get_profile_image_url() }}" 
+                                 class="rounded-circle me-2" 
+                                 width="32" height="32" 
+                                 alt="{{ user.get_full_name() }}">
+                            <div>
+                                <div class="fw-bold">{{ user.get_full_name() }}</div>
+                                <small class="text-muted">{{ user.username }}</small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-3">
+                        <i class="fas fa-users fa-2x text-muted mb-2"></i>
+                        <p class="text-muted mb-0">No available users to add</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-select user when clicked in the list
+document.querySelectorAll('.list-group-item').forEach(item => {
+    item.addEventListener('click', function() {
+        const userName = this.querySelector('.fw-bold').textContent;
+        const userSelect = document.getElementById('user_id');
+        
+        // Find the option that matches the user name
+        for (let option of userSelect.options) {
+            if (option.text.includes(userName)) {
+                option.selected = true;
+                break;
+            }
+        }
+    });
+});
+
+// Form validation
+document.querySelector('form').addEventListener('submit', function(e) {
+    const userId = document.getElementById('user_id').value;
+    const role = document.getElementById('role').value;
+    
+    if (!userId) {
+        e.preventDefault();
+        alert('Please select a user to add to the team.');
+        return false;
+    }
+    
+    if (!role) {
+        e.preventDefault();
+        alert('Please select a role for the team member.');
+        return false;
+    }
+});
+</script>
+{% endblock %} 

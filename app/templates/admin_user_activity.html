@@ -1,0 +1,975 @@
+{% extends "base.html" %}
+
+{% block title %}User Activity - {{ user.get_full_name() }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2>
+                    <i class="fas fa-{{ 'user-tie' if user_role == 'admin' else 'user-cog' if user_role == 'manager' else 'user' if user_role == 'production' else 'phone' if user_role == 'caller' else 'user-plus' if user_role in ['lead generator', 'leadgenerator'] else 'user' }}"></i> 
+                    {{ user.get_full_name() }} - {{ 'Lead Generator' if user_role in ['lead generator', 'leadgenerator'] else user_role|title }} Dashboard
+                </h2>
+                <div>
+                    <a href="{{ url_for('main.admin_activity_dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Dashboard
+                    </a>
+                    <a href="{{ url_for('main.admin_manage_tasks') }}?user_id={{ user.id }}" class="btn btn-outline-primary">
+                        <i class="fas fa-tasks"></i> Assign Tasks
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Info Card -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-user-circle"></i> User Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Name:</strong> {{ user.get_full_name() }}</p>
+                            <p><strong>Username:</strong> {{ user.username }}</p>
+                            <p><strong>Email:</strong> {{ user.email }}</p>
+                            <p><strong>Role:</strong> 
+                                <span class="badge bg-{{ 'danger' if user.role.name == 'Admin' else 'warning' if user.role.name == 'Manager' else 'info' if user.role.name == 'User' else 'secondary' }}">
+                                    {{ user.role.name }}
+                                </span>
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Status:</strong> 
+                                {% if user.is_approved %}
+                                    <span class="badge bg-success">Approved</span>
+                                {% else %}
+                                    <span class="badge bg-warning">Pending</span>
+                                {% endif %}
+                            </p>
+                            <p><strong>Active:</strong> 
+                                {% if user.is_active %}
+                                    <span class="badge bg-success">Active</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Inactive</span>
+                                {% endif %}
+                            </p>
+                            <p><strong>Created:</strong> {{ user.created_at.strftime('%Y-%m-%d') }}</p>
+                            <p><strong>Last Login:</strong> 
+                                {% if user.last_login %}
+                                    {{ user.last_login.strftime('%Y-%m-%d %H:%M') }}
+                                {% else %}
+                                    <span class="text-muted">Never</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-{{ 'chart-line' if user_role == 'admin' else 'chart-bar' if user_role == 'manager' else 'phone' if user_role in ['production', 'caller'] else 'user-plus' if user_role in ['lead generator', 'leadgenerator'] else 'chart-bar' }}"></i> 
+                        {{ 'Management' if user_role in ['admin', 'manager'] else 'Call' if user_role in ['production', 'caller'] else 'Lead Generation' if user_role in ['lead generator', 'leadgenerator'] else 'Performance' }} Summary
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if stats %}
+                        <div class="row text-center">
+                            <div class="col-md-{{ '6' if user_role in ['lead generator', 'leadgenerator'] else '3' }}">
+                                <h4 class="text-primary">{{ stats.leads_created or 0 }}</h4>
+                                <small>Leads Created</small>
+                            </div>
+                            {% if show_followups %}
+                            <div class="col-md-3">
+                                <h4 class="text-success">{{ stats.followups_added or 0 }}</h4>
+                                <small>Follow-ups</small>
+                            </div>
+                            {% endif %}
+                            {% if show_conversions %}
+                            <div class="col-md-3">
+                                <h4 class="text-warning">{{ stats.conversions or 0 }}</h4>
+                                <small>Conversions</small>
+                            </div>
+                            {% endif %}
+                            <div class="col-md-{{ '6' if user_role in ['lead generator', 'leadgenerator'] else '3' }}">
+                                <h4 class="text-info">{{ stats.total_time_spent or 0 }}</h4>
+                                <small>Hours Spent</small>
+                            </div>
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center">No performance data available for this period.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Comprehensive Work Data at a Glance -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-{{ 'tachometer-alt' if user_role == 'admin' else 'chart-pie' if user_role == 'manager' else 'phone' if user_role in ['production', 'caller'] else 'user-plus' if user_role in ['lead generator', 'leadgenerator'] else 'tachometer-alt' }}"></i> 
+                        {{ 'Management' if user_role in ['admin', 'manager'] else 'Call' if user_role in ['production', 'caller'] else 'Lead Generation' if user_role in ['lead generator', 'leadgenerator'] else 'Work' }} Data at a Glance
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Period Navigation -->
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <ul class="nav nav-tabs" id="periodTabs" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active" id="daily-tab" data-bs-toggle="tab" data-bs-target="#daily" type="button" role="tab">
+                                        <i class="fas fa-calendar-day"></i> Daily
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="weekly-tab" data-bs-toggle="tab" data-bs-target="#weekly" type="button" role="tab">
+                                        <i class="fas fa-calendar-week"></i> Weekly
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="monthly-tab" data-bs-toggle="tab" data-bs-target="#monthly" type="button" role="tab">
+                                        <i class="fas fa-calendar-alt"></i> Monthly
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Tab Content -->
+                    <div class="tab-content" id="periodTabContent">
+                        <!-- Daily Tab -->
+                        <div class="tab-pane fade show active" id="daily" role="tabpanel">
+                            <div class="row">
+                                <div class="col-md-{{ '6' if user_role in ['lead generator', 'leadgenerator'] else '3' }}">
+                                    <div class="text-center p-3 border rounded bg-light">
+                                        <h3 class="text-primary mb-0">{{ daily_stats.leads_created or 0 }}</h3>
+                                        <small class="text-muted">Leads Created Today</small>
+                                    </div>
+                                </div>
+                                {% if show_followups %}
+                                <div class="col-md-3">
+                                    <div class="text-center p-3 border rounded bg-light">
+                                        <h3 class="text-success mb-0">{{ daily_stats.followups_added or 0 }}</h3>
+                                        <small class="text-muted">Follow-ups Today</small>
+                                    </div>
+                                </div>
+                                {% endif %}
+                                {% if show_conversions %}
+                                <div class="col-md-3">
+                                    <div class="text-center p-3 border rounded bg-light">
+                                        <h3 class="text-warning mb-0">{{ daily_stats.conversions or 0 }}</h3>
+                                        <small class="text-muted">Conversions Today</small>
+                                    </div>
+                                </div>
+                                {% endif %}
+                                {% if show_call_analytics %}
+                                <div class="col-md-3">
+                                    <div class="text-center p-3 border rounded bg-light">
+                                        <h3 class="text-info mb-0">{{ today_calls }}</h3>
+                                        <small class="text-muted">Calls Made Today</small>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Weekly Tab -->
+                        <div class="tab-pane fade" id="weekly" role="tabpanel">
+                            <div class="row">
+                                <div class="col-md-{{ '6' if user_role in ['lead generator', 'leadgenerator'] else '3' }}">
+                                    <div class="text-center p-3 border rounded bg-light">
+                                        <h3 class="text-primary mb-0">{{ weekly_stats.leads_created or 0 }}</h3>
+                                        <small class="text-muted">Leads This Week</small>
+                                    </div>
+                                </div>
+                                {% if show_followups %}
+                                <div class="col-md-3">
+                                    <div class="text-center p-3 border rounded bg-light">
+                                        <h3 class="text-success mb-0">{{ weekly_stats.followups_added or 0 }}</h3>
+                                        <small class="text-muted">Follow-ups This Week</small>
+                                    </div>
+                                </div>
+                                {% endif %}
+                                {% if show_conversions %}
+                                <div class="col-md-3">
+                                    <div class="text-center p-3 border rounded bg-light">
+                                        <h3 class="text-warning mb-0">{{ weekly_stats.conversions or 0 }}</h3>
+                                        <small class="text-muted">Conversions This Week</small>
+                                    </div>
+                                </div>
+                                {% endif %}
+                                {% if show_call_analytics %}
+                                <div class="col-md-3">
+                                    <div class="text-center p-3 border rounded bg-light">
+                                        <h3 class="text-info mb-0">{{ week_calls }}</h3>
+                                        <small class="text-muted">Calls This Week</small>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Monthly Tab -->
+                        <div class="tab-pane fade" id="monthly" role="tabpanel">
+                            <div class="row">
+                                <div class="col-md-{{ '6' if user_role in ['lead generator', 'leadgenerator'] else '3' }}">
+                                    <div class="text-center p-3 border rounded bg-light">
+                                        <h3 class="text-primary mb-0">{{ monthly_stats.leads_created or 0 }}</h3>
+                                        <small class="text-muted">Leads This Month</small>
+                                    </div>
+                                </div>
+                                {% if show_followups %}
+                                <div class="col-md-3">
+                                    <div class="text-center p-3 border rounded bg-light">
+                                        <h3 class="text-success mb-0">{{ monthly_stats.followups_added or 0 }}</h3>
+                                        <small class="text-muted">Follow-ups This Month</small>
+                                    </div>
+                                </div>
+                                {% endif %}
+                                {% if show_conversions %}
+                                <div class="col-md-3">
+                                    <div class="text-center p-3 border rounded bg-light">
+                                        <h3 class="text-warning mb-0">{{ monthly_stats.conversions or 0 }}</h3>
+                                        <small class="text-muted">Conversions This Month</small>
+                                    </div>
+                                </div>
+                                {% endif %}
+                                {% if show_call_analytics %}
+                                <div class="col-md-3">
+                                    <div class="text-center p-3 border rounded bg-light">
+                                        <h3 class="text-info mb-0">{{ month_calls }}</h3>
+                                        <small class="text-muted">Calls This Month</small>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Call Analytics and Lead Status -->
+    {% if show_call_analytics %}
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-warning text-white">
+                    <h5 class="mb-0"><i class="fas fa-phone"></i> Call Analytics</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-6">
+                            <h4 class="text-success">{{ today_calls }}</h4>
+                            <small>Today's Calls</small>
+                        </div>
+                        <div class="col-md-6">
+                            <h4 class="text-info">{{ total_calls }}</h4>
+                            <small>Total Calls</small>
+                        </div>
+                    </div>
+                    <div class="row text-center mt-3">
+                        <div class="col-md-6">
+                            <h4 class="text-primary">{{ week_calls }}</h4>
+                            <small>This Week</small>
+                        </div>
+                        <div class="col-md-6">
+                            <h4 class="text-warning">{{ month_calls }}</h4>
+                            <small>This Month</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-{{ '12' if user_role in ['lead generator', 'leadgenerator'] else '6' }}">
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-{{ 'user-plus' if user_role in ['lead generator', 'leadgenerator'] else 'chart-pie' }}"></i> 
+                        {{ 'Lead Generation Summary' if user_role in ['lead generator', 'leadgenerator'] else 'Lead Status Breakdown' }}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if lead_status_breakdown %}
+                        <div class="row">
+                            {% for status, count in lead_status_breakdown %}
+                            <div class="col-md-6 mb-2">
+                                <div class="d-flex justify-content-between">
+                                    <span class="badge bg-{{ 'success' if status == 'Converted' else 'warning' if status == 'Interested' else 'info' if status == 'Follow Up' else 'secondary' }}">
+                                        {{ status }}
+                                    </span>
+                                    <strong>{{ count }}</strong>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center">No lead status data available.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+        </div>
+    </div>
+
+         <!-- Recent Activity Summary -->
+     <div class="row mb-4">
+         <div class="col-md-8">
+             <div class="card" data-section="activities">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-history"></i> Recent Activity Summary (Last 7 Days)</h5>
+                </div>
+                <div class="card-body">
+                                         {% if recent_activities %}
+                         <div class="table-responsive">
+                             <table class="table table-hover">
+                                 <thead>
+                                     <tr>
+                                         <th>Activity</th>
+                                         <th>Type</th>
+                                         <th>Date</th>
+                                     </tr>
+                                 </thead>
+                                 <tbody>
+                                     {% for activity in recent_activities %}
+                                     <tr>
+                                         <td>{{ activity.description }}</td>
+                                         <td>
+                                             <span class="badge bg-{{ 'success' if activity.activity_type == 'call_made' else 'warning' if activity.activity_type == 'call_attempted' else 'info' if activity.activity_type == 'lead_created' else 'secondary' }}">
+                                                 {{ activity.activity_type.replace('_', ' ').title() }}
+                                             </span>
+                                         </td>
+                                         <td>{{ activity.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                     </tr>
+                                     {% endfor %}
+                                 </tbody>
+                             </table>
+                         </div>
+                         
+                                                   <!-- Pagination for Recent Activities -->
+                          {% if recent_activities_pagination.pages > 1 and user_role in ['caller', 'lead generator', 'leadgenerator'] %}
+                          <nav aria-label="Recent Activities Pagination" class="mt-3">
+                              <ul class="pagination pagination-sm justify-content-center">
+                                  {% if recent_activities_pagination.has_prev %}
+                                      <li class="page-item">
+                                          <a class="page-link pagination-link" href="{{ url_for('main.admin_user_activity', user_id=user.id, period=period, activity_page=recent_activities_pagination.prev_num, leads_page=leads_pagination.page if leads_pagination else 1) }}&_token={{ csrf_token() }}" data-section="activities">
+                                              <i class="fas fa-chevron-left"></i> Previous
+                                          </a>
+                                      </li>
+                                  {% endif %}
+                                  
+                                  {% for page_num in recent_activities_pagination.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+                                      {% if page_num %}
+                                          {% if page_num != recent_activities_pagination.page %}
+                                              <li class="page-item">
+                                                  <a class="page-link pagination-link" href="{{ url_for('main.admin_user_activity', user_id=user.id, period=period, activity_page=page_num, leads_page=leads_pagination.page if leads_pagination else 1) }}&_token={{ csrf_token() }}" data-section="activities">
+                                                      {{ page_num }}
+                                                  </a>
+                                              </li>
+                                          {% else %}
+                                              <li class="page-item active">
+                                                  <span class="page-link">{{ page_num }}</span>
+                                              </li>
+                                          {% endif %}
+                                      {% else %}
+                                          <li class="page-item disabled">
+                                              <span class="page-link">...</span>
+                                          </li>
+                                      {% endif %}
+                                  {% endfor %}
+                                  
+                                  {% if recent_activities_pagination.has_next %}
+                                      <li class="page-item">
+                                          <a class="page-link pagination-link" href="{{ url_for('main.admin_user_activity', user_id=user.id, period=period, activity_page=recent_activities_pagination.next_num, leads_page=leads_pagination.page if leads_pagination else 1) }}&_token={{ csrf_token() }}" data-section="activities">
+                                              Next <i class="fas fa-chevron-right"></i>
+                                          </a>
+                                      </li>
+                                  {% endif %}
+                              </ul>
+                              <div class="text-center">
+                                  <small class="text-muted">
+                                      Showing {{ recent_activities_pagination.first }} to {{ recent_activities_pagination.last }} of {{ recent_activities_pagination.total }} activities
+                                  </small>
+                              </div>
+                          </nav>
+                          {% endif %}
+                     {% else %}
+                         <p class="text-muted text-center">No recent activities found.</p>
+                     {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Activity Breakdown (Last 30 Days)</h5>
+                </div>
+                <div class="card-body">
+                    {% if activity_breakdown %}
+                        {% for activity_type, count in activity_breakdown %}
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="badge bg-{{ 'success' if activity_type == 'call_made' else 'warning' if activity_type == 'call_attempted' else 'info' if activity_type == 'lead_created' else 'secondary' }}">
+                                {{ activity_type.replace('_', ' ').title() }}
+                            </span>
+                            <strong>{{ count }}</strong>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted text-center">No activity data available.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Projections Overview -->
+    {% if user_projections and show_projections %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-line"></i> {{ user.get_full_name() }}'s Projections - {{ current_month.strftime('%B %Y') }}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for projection in user_projections %}
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100 border-{{ projection.get_status_color() }}">
+                                <div class="card-header bg-{{ projection.get_status_color() }} text-white">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-{{ 'trophy' if projection.projection_type == 'conversions' else 'phone' if projection.projection_type == 'calls' else 'list' }}"></i>
+                                        {{ projection.projection_type|title }}
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row text-center">
+                                        <div class="col-6">
+                                            <h6 class="text-muted">Target</h6>
+                                            <h4 class="text-primary">{{ projection.target_value }}</h4>
+                                        </div>
+                                        <div class="col-6">
+                                            <h6 class="text-muted">Actual</h6>
+                                            <h4 class="text-{{ projection.get_status_color() }}">{{ projection.actual_value }}</h4>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Progress Bar -->
+                                    <div class="mt-3">
+                                        <div class="d-flex justify-content-between mb-1">
+                                            <span class="text-muted">Progress</span>
+                                            <span class="text-{{ projection.get_status_color() }} fw-bold">{{ "%.0f"|format(projection.completion_percentage) }}%</span>
+                                        </div>
+                                        <div class="progress" style="height: 8px;">
+                                            <div class="progress-bar bg-{{ projection.get_status_color() }}" 
+                                                 style="width: {{ projection.completion_percentage }}%">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Status Badge -->
+                                    <div class="mt-2 text-center">
+                                        {% if projection.completion_percentage >= 100 %}
+                                            <span class="badge bg-success">Target Achieved!</span>
+                                        {% elif projection.completion_percentage >= 75 %}
+                                            <span class="badge bg-warning">On Track</span>
+                                        {% elif projection.completion_percentage >= 50 %}
+                                            <span class="badge bg-info">In Progress</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Needs Attention</span>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <!-- Notes -->
+                                    {% if projection.notes %}
+                                    <div class="mt-2">
+                                        <small class="text-muted">
+                                            <strong>Notes:</strong> {{ projection.notes[:50] }}{% if projection.notes|length > 50 %}...{% endif %}
+                                        </small>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <!-- Projection Summary -->
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <div class="row text-center">
+                                        <div class="col-md-3">
+                                            <h6 class="text-muted">Overall Performance</h6>
+                                            {% set avg_completion = (user_projections|map(attribute='completion_percentage')|sum / user_projections|length) if user_projections else 0 %}
+                                            <h4 class="text-{{ 'success' if avg_completion >= 100 else 'warning' if avg_completion >= 75 else 'info' if avg_completion >= 50 else 'danger' }}">
+                                                {{ "%.0f"|format(avg_completion) }}%
+                                            </h4>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <h6 class="text-muted">Targets Set</h6>
+                                            <h4 class="text-primary">{{ user_projections|length }}</h4>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <h6 class="text-muted">Achieved</h6>
+                                            <h4 class="text-success">{{ user_projections|selectattr('completion_percentage', '>=', 100)|list|length }}</h4>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <h6 class="text-muted">Behind</h6>
+                                            <h4 class="text-danger">{{ user_projections|selectattr('completion_percentage', '<', 50)|list|length }}</h4>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% elif show_projections %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-line"></i> Projections</h5>
+                </div>
+                <div class="card-body text-center py-4">
+                    <i class="fas fa-chart-bar fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">{{ user.get_full_name() }} has no projections set for {{ current_month.strftime('%B %Y') }}</h5>
+                    <p class="text-muted">Projections help track performance goals and progress.</p>
+                    <a href="{{ url_for('main.admin_projections') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-plus"></i> View All Projections
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Per-Client Projections -->
+    {% if (client_projections_data or lead_projections_data) and show_client_projections %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-warning text-white">
+                    <h5 class="mb-0"><i class="fas fa-users"></i> {{ user.get_full_name() }}'s Client Projections - {{ current_month.strftime('%B %Y') }}</h5>
+                </div>
+                <div class="card-body">
+                    <!-- New Converted Clients -->
+                    {% if client_projections_data %}
+                    <h6 class="text-primary mb-3">
+                        <i class="fas fa-user-plus"></i> New Converted Clients
+                    </h6>
+                    <div class="row mb-4">
+                        {% for data in client_projections_data %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card border-primary">
+                                <div class="card-header bg-primary text-white">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-user"></i> {{ data.client.client_name }} ({{ data.client.client_id }})
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        {% for projection in data.projections %}
+                                        <div class="col-md-6 mb-2">
+                                            <div class="text-center">
+                                                <h6 class="text-muted">{{ projection.projection_type|replace('_', ' ')|title }}</h6>
+                                                <h5 class="text-{{ projection.get_status_color() }}">
+                                                    {% if projection.projection_type == 'revenue' %}
+                                                        ${{ "{:,}".format(projection.actual_value) }}
+                                                    {% else %}
+                                                        {{ projection.actual_value }}
+                                                    {% endif %}
+                                                </h5>
+                                                <small class="text-muted">Target: 
+                                                    {% if projection.projection_type == 'revenue' %}
+                                                        ${{ "{:,}".format(projection.target_value) }}
+                                                    {% else %}
+                                                        {{ projection.target_value }}
+                                                    {% endif %}
+                                                </small>
+                                                <div class="progress mt-1" style="height: 4px;">
+                                                    <div class="progress-bar bg-{{ projection.get_status_color() }}" 
+                                                         style="width: {{ projection.completion_percentage }}%">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <!-- Existing Converted Leads -->
+                    {% if lead_projections_data %}
+                    <h6 class="text-success mb-3">
+                        <i class="fas fa-trophy"></i> Existing Converted Leads
+                    </h6>
+                    <div class="row">
+                        {% for data in lead_projections_data %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card border-success">
+                                <div class="card-header bg-success text-white">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-building"></i> {{ data.lead.company_name }}
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        {% for projection in data.projections %}
+                                        <div class="col-md-6 mb-2">
+                                            <div class="text-center">
+                                                <h6 class="text-muted">{{ projection.projection_type|replace('_', ' ')|title }}</h6>
+                                                <h5 class="text-{{ projection.get_status_color() }}">
+                                                    {% if projection.projection_type == 'revenue' %}
+                                                        ${{ "{:,}".format(projection.actual_value) }}
+                                                    {% else %}
+                                                        {{ projection.actual_value }}
+                                                    {% endif %}
+                                                </h5>
+                                                <small class="text-muted">Target: 
+                                                    {% if projection.projection_type == 'revenue' %}
+                                                        ${{ "{:,}".format(projection.target_value) }}
+                                                    {% else %}
+                                                        {{ projection.target_value }}
+                                                    {% endif %}
+                                                </small>
+                                                <div class="progress mt-1" style="height: 4px;">
+                                                    <div class="progress-bar bg-{{ projection.get_status_color() }}" 
+                                                         style="width: {{ projection.completion_percentage }}%">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Period Selector -->
+    {% if show_detailed_analytics %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="btn-group" role="group">
+                        <a href="{{ url_for('main.admin_user_activity', user_id=user.id, period='week') }}" 
+                           class="btn btn-{{ 'primary' if period == 'week' else 'outline-primary' }}">Week</a>
+                        <a href="{{ url_for('main.admin_user_activity', user_id=user.id, period='month') }}" 
+                           class="btn btn-{{ 'primary' if period == 'month' else 'outline-primary' }}">Month</a>
+                        <a href="{{ url_for('main.admin_user_activity', user_id=user.id, period='year') }}" 
+                           class="btn btn-{{ 'primary' if period == 'year' else 'outline-primary' }}">Year</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Activities and Tasks -->
+    <div class="row">
+        <!-- Recent Activities -->
+        <div class="col-md-{{ '6' if show_task_management else '12' }}">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-history"></i> Recent Activities</h5>
+                </div>
+                <div class="card-body">
+                                         {% if activities %}
+                         <div class="list-group list-group-flush">
+                             {% for activity in activities %}
+                             <div class="list-group-item">
+                                 <div class="d-flex justify-content-between align-items-start">
+                                     <div>
+                                         <h6 class="mb-1">{{ activity.description }}</h6>
+                                         <small class="text-muted">{{ activity.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                                     </div>
+                                     <span class="badge bg-secondary">{{ activity.activity_type|replace('_', ' ')|title }}</span>
+                                 </div>
+                             </div>
+                             {% endfor %}
+                         </div>
+                         
+                         <!-- Pagination for Recent Activities (Bottom Section) -->
+                         {% if activities|length > 10 and user_role in ['caller', 'lead generator', 'leadgenerator'] %}
+                         <div class="text-center mt-3">
+                             <small class="text-muted">Showing 10 of {{ activities|length }} activities</small>
+                                                           <div class="mt-2">
+                                  <a href="{{ url_for('main.admin_user_activity', user_id=user.id, period=period, activity_page=1, leads_page=leads_pagination.page if leads_pagination else 1) }}&_token={{ csrf_token() }}" class="btn btn-sm btn-outline-primary">
+                                      <i class="fas fa-list"></i> View All Activities
+                                  </a>
+                              </div>
+                         </div>
+                         {% endif %}
+                     {% else %}
+                         <p class="text-muted text-center py-3">No recent activities found.</p>
+                     {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- User Tasks -->
+        {% if show_task_management %}
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-warning text-white">
+                    <h5 class="mb-0"><i class="fas fa-tasks"></i> User Tasks</h5>
+                </div>
+                <div class="card-body">
+                    {% if tasks %}
+                        <div class="list-group list-group-flush">
+                            {% for task in tasks[:10] %}
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h6 class="mb-1">{{ task.title }}</h6>
+                                        <small class="text-muted">{{ task.description[:50] }}{% if task.description|length > 50 %}...{% endif %}</small>
+                                        <br>
+                                        <span class="badge bg-{{ 'danger' if task.priority == 'urgent' else 'warning' if task.priority == 'high' else 'info' if task.priority == 'medium' else 'secondary' }}">
+                                            {{ task.priority|title }}
+                                        </span>
+                                        <span class="badge bg-{{ 'success' if task.status == 'completed' else 'warning' if task.status == 'in_progress' else 'danger' if task.status == 'cancelled' else 'secondary' }}">
+                                            {{ task.status|replace('_', ' ')|title }}
+                                        </span>
+                                    </div>
+                                    <small class="text-muted">{{ task.created_at.strftime('%Y-%m-%d') }}</small>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% if tasks|length > 10 %}
+                            <div class="text-center mt-3">
+                                <small class="text-muted">Showing 10 of {{ tasks|length }} tasks</small>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <p class="text-muted text-center py-3">No tasks assigned to this user.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+         <!-- User's Recent Leads -->
+     <div class="row mt-4">
+         <div class="col-12">
+             <div class="card" data-section="leads">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-list"></i> Recent Leads by {{ user.get_full_name() }}</h5>
+                </div>
+                <div class="card-body">
+                                         {% if leads %}
+                         <div class="table-responsive">
+                             <table class="table table-striped">
+                                 <thead>
+                                     <tr>
+                                         <th>Company</th>
+                                         <th>Industry</th>
+                                         <th>Country</th>
+                                         <th>Status</th>
+                                         <th>Created</th>
+                                         <th>Actions</th>
+                                     </tr>
+                                 </thead>
+                                 <tbody>
+                                     {% for lead in leads %}
+                                     <tr>
+                                         <td>
+                                             <strong>{{ lead.company_name }}</strong>
+                                             <br>
+                                             <small class="text-muted">{{ lead.company_website }}</small>
+                                         </td>
+                                         <td>{{ lead.industry }}</td>
+                                         <td>{{ lead.country }}</td>
+                                         <td>
+                                             <span class="badge bg-{{ 'success' if lead.status == 'Converted' else 'warning' if lead.status == 'Interested' else 'info' if lead.status == 'Contacted' else 'secondary' }}">
+                                                 {{ lead.status }}
+                                             </span>
+                                         </td>
+                                         <td>{{ lead.created_at.strftime('%Y-%m-%d') }}</td>
+                                         <td>
+                                             <a href="{{ url_for('main.get_lead', lead_id=lead.id) }}" class="btn btn-sm btn-outline-primary">
+                                                 <i class="fas fa-eye"></i> View
+                                             </a>
+                                         </td>
+                                     </tr>
+                                     {% endfor %}
+                                 </tbody>
+                             </table>
+                         </div>
+                         
+                                                   <!-- Pagination for Recent Leads -->
+                          {% if leads_pagination.pages > 1 and user_role in ['caller', 'lead generator', 'leadgenerator'] %}
+                          <nav aria-label="Recent Leads Pagination" class="mt-3">
+                              <ul class="pagination pagination-sm justify-content-center">
+                                  {% if leads_pagination.has_prev %}
+                                      <li class="page-item">
+                                          <a class="page-link pagination-link" href="{{ url_for('main.admin_user_activity', user_id=user.id, period=period, activity_page=recent_activities_pagination.page if recent_activities_pagination else 1, leads_page=leads_pagination.prev_num) }}&_token={{ csrf_token() }}" data-section="leads">
+                                              <i class="fas fa-chevron-left"></i> Previous
+                                          </a>
+                                      </li>
+                                  {% endif %}
+                                  
+                                  {% for page_num in leads_pagination.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+                                      {% if page_num %}
+                                          {% if page_num != leads_pagination.page %}
+                                              <li class="page-item">
+                                                  <a class="page-link pagination-link" href="{{ url_for('main.admin_user_activity', user_id=user.id, period=period, activity_page=recent_activities_pagination.page if recent_activities_pagination else 1, leads_page=page_num) }}&_token={{ csrf_token() }}" data-section="leads">
+                                                      {{ page_num }}
+                                                  </a>
+                                              </li>
+                                          {% else %}
+                                              <li class="page-item active">
+                                                  <span class="page-link">{{ page_num }}</span>
+                                              </li>
+                                          {% endif %}
+                                      {% else %}
+                                          <li class="page-item disabled">
+                                              <span class="page-link">...</span>
+                                          </li>
+                                      {% endif %}
+                                  {% endfor %}
+                                  
+                                  {% if leads_pagination.has_next %}
+                                      <li class="page-item">
+                                          <a class="page-link pagination-link" href="{{ url_for('main.admin_user_activity', user_id=user.id, period=period, activity_page=recent_activities_pagination.page if recent_activities_pagination else 1, leads_page=leads_pagination.next_num) }}&_token={{ csrf_token() }}" data-section="leads">
+                                              Next <i class="fas fa-chevron-right"></i>
+                                          </a>
+                                      </li>
+                                  {% endif %}
+                              </ul>
+                              <div class="text-center">
+                                  <small class="text-muted">
+                                      Showing {{ leads_pagination.first }} to {{ leads_pagination.last }} of {{ leads_pagination.total }} leads
+                                  </small>
+                              </div>
+                          </nav>
+                          {% endif %}
+                     {% else %}
+                         <p class="text-muted text-center py-3">No leads created by this user yet.</p>
+                     {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+ </div>
+
+<!-- Smooth Pagination JavaScript -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Store scroll position before navigation
+    let scrollPosition = 0;
+    
+    // Handle pagination clicks
+    document.querySelectorAll('.pagination-link').forEach(function(link) {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Store current scroll position
+            scrollPosition = window.pageYOffset;
+            
+            // Get the target URL
+            const url = this.getAttribute('href');
+            const section = this.getAttribute('data-section');
+            
+            // Show loading indicator
+            showLoadingIndicator(section);
+            
+            // Fetch the new page content
+            fetch(url)
+                .then(response => response.text())
+                .then(html => {
+                    // Create a temporary div to parse the HTML
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = html;
+                    
+                    // Extract the specific section content
+                    let newContent;
+                    if (section === 'activities') {
+                        newContent = tempDiv.querySelector('.card-header:contains("Recent Activity Summary")').closest('.card');
+                    } else if (section === 'leads') {
+                        newContent = tempDiv.querySelector('.card-header:contains("Recent Leads by")').closest('.card');
+                    }
+                    
+                    if (newContent) {
+                        // Replace the current section content
+                        const currentSection = document.querySelector(`[data-section="${section}"]`).closest('.card');
+                        currentSection.innerHTML = newContent.innerHTML;
+                        
+                        // Update URL without page reload
+                        window.history.pushState({}, '', url);
+                        
+                        // Restore scroll position
+                        setTimeout(() => {
+                            window.scrollTo(0, scrollPosition);
+                        }, 100);
+                    } else {
+                        // Fallback to full page reload
+                        window.location.href = url;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading pagination:', error);
+                    // Fallback to full page reload
+                    window.location.href = url;
+                })
+                .finally(() => {
+                    hideLoadingIndicator(section);
+                });
+        });
+    });
+    
+    // Show loading indicator
+    function showLoadingIndicator(section) {
+        const sectionElement = document.querySelector(`[data-section="${section}"]`).closest('.card');
+        const loadingDiv = document.createElement('div');
+        loadingDiv.className = 'text-center py-3';
+        loadingDiv.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>';
+        loadingDiv.id = `loading-${section}`;
+        sectionElement.appendChild(loadingDiv);
+    }
+    
+    // Hide loading indicator
+    function hideLoadingIndicator(section) {
+        const loadingDiv = document.getElementById(`loading-${section}`);
+        if (loadingDiv) {
+            loadingDiv.remove();
+        }
+    }
+    
+    // Handle browser back/forward buttons
+    window.addEventListener('popstate', function() {
+        window.location.reload();
+    });
+});
+</script>
+{% endblock %} 

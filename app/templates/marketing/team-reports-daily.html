@@ -1,0 +1,315 @@
+{% extends "base.html" %}
+
+{% block title %}Daily Team Reports - Marketing{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0 text-info">
+                        <i class="fas fa-calendar-day me-2"></i>Daily Team Reports
+                    </h1>
+                    <p class="text-muted mb-0">Marketing team daily performance overview</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{{ url_for('marketing.dashboard') }}" class="btn btn-outline-info">
+                        <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+                    </a>
+                    <a href="{{ url_for('marketing.team') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-users me-1"></i>Team Overview
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Date Filter -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+                        <div class="col-md-4">
+                            <label for="date" class="form-label">Report Date</label>
+                            <input type="date" class="form-control" id="date" name="date" 
+                                   value="{{ report_date.isoformat() }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">&nbsp;</label>
+                            <button type="submit" class="btn btn-info d-block w-100">
+                                <i class="fas fa-filter me-1"></i>Apply Filter
+                            </button>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">&nbsp;</label>
+                            <button type="button" class="btn btn-success d-block w-100" onclick="generateReports()">
+                                <i class="fas fa-plus me-1"></i>Generate Reports
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Team Summary -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>Team Summary - {{ report_date.strftime('%B %d, %Y') }}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <div class="border-end">
+                                <h3 class="text-primary mb-1">{{ member_reports|selectattr('has_report', 'equalto', true)|list|length }}</h3>
+                                <small class="text-muted">Reports Submitted</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="border-end">
+                                <h3 class="text-success mb-1">
+                                    {% set total_leads = member_reports|selectattr('has_report', 'equalto', true)|map(attribute='report.leads_created')|sum %}
+                                    {{ total_leads }}
+                                </h3>
+                                <small class="text-muted">Total Leads Generated</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="border-end">
+                                <h3 class="text-warning mb-1">
+                                    {% set total_calls = member_reports|selectattr('has_report', 'equalto', true)|map(attribute='report.calls_made')|sum %}
+                                    {{ total_calls }}
+                                </h3>
+                                <small class="text-muted">Total Calls Made</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div>
+                                <h3 class="text-info mb-1">
+                                    {% set avg_achievement = member_reports|selectattr('has_report', 'equalto', true)|map(attribute='report.goal_achievement')|list %}
+                                    {% if avg_achievement %}
+                                        {{ (avg_achievement|sum / avg_achievement|length)|round(1) }}%
+                                    {% else %}
+                                        0%
+                                    {% endif %}
+                                </h3>
+                                <small class="text-muted">Average Goal Achievement</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Team Members Reports Table -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-table me-2"></i>Team Members Daily Reports
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Team Member</th>
+                                    <th>Leads Created</th>
+                                    <th>Calls Made</th>
+                                    <th>Goal Achievement</th>
+                                    <th>Active Time</th>
+                                    <th>Conversions</th>
+                                    <th>Productivity Score</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for member_report in member_reports %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <img src="{{ member_report.user.get_profile_image_url() }}" 
+                                                 class="rounded-circle me-2" 
+                                                 width="32" height="32" 
+                                                 alt="{{ member_report.user.get_full_name() }}">
+                                            <div>
+                                                <h6 class="mb-0">{{ member_report.user.get_full_name() }}</h6>
+                                                <small class="text-muted">{{ member_report.user.role.name }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if member_report.has_report %}
+                                            <span class="badge bg-primary">{{ member_report.report.leads_created }}</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">0</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if member_report.has_report %}
+                                            <span class="badge bg-success">{{ member_report.report.calls_made }}</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">0</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if member_report.has_report %}
+                                            <div class="progress" style="height: 20px;">
+                                                <div class="progress-bar bg-warning" 
+                                                     style="width: {{ member_report.report.goal_achievement }}%">
+                                                    {{ member_report.report.goal_achievement }}%
+                                                </div>
+                                            </div>
+                                        {% else %}
+                                            <span class="badge bg-secondary">0%</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if member_report.has_report %}
+                                            <span class="text-info">{{ (member_report.report.total_active_time / 60)|round(1) }}h</span>
+                                        {% else %}
+                                            <span class="text-muted">0h</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if member_report.has_report %}
+                                            <span class="badge bg-info">{{ member_report.report.conversions or 0 }}</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">0</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if member_report.has_report %}
+                                            <span class="badge bg-dark">{{ member_report.report.productivity_score or 0 }}</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">0</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if member_report.has_report %}
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check me-1"></i>Submitted
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-warning">
+                                                <i class="fas fa-clock me-1"></i>Pending
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{{ url_for('marketing.team_member_report', member_id=member_report.user.id) }}?date={{ report_date.isoformat() }}" 
+                                               class="btn btn-sm btn-outline-info">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="{{ url_for('marketing.team_member_performance', member_id=member_report.user.id) }}" 
+                                               class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-chart-line"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Options -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-download me-2"></i>Export Options
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <button class="btn btn-outline-primary w-100" onclick="exportToPDF()">
+                                <i class="fas fa-file-pdf me-1"></i>Export PDF
+                            </button>
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-outline-success w-100" onclick="exportToExcel()">
+                                <i class="fas fa-file-excel me-1"></i>Export Excel
+                            </button>
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-outline-info w-100" onclick="exportToCSV()">
+                                <i class="fas fa-file-csv me-1"></i>Export CSV
+                            </button>
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-outline-warning w-100" onclick="scheduleReport()">
+                                <i class="fas fa-clock me-1"></i>Schedule Report
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function generateReports() {
+    if (confirm('Generate daily reports for all team members?')) {
+        fetch('/marketing/api/team-reports/daily/generate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                date: '{{ report_date.isoformat() }}'
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Reports generated successfully!');
+                location.reload();
+            } else {
+                alert('Error generating reports: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error generating reports');
+        });
+    }
+}
+
+function exportToPDF() {
+    window.open('/marketing/api/team-reports/export/pdf?date={{ report_date.isoformat() }}', '_blank');
+}
+
+function exportToExcel() {
+    window.open('/marketing/api/team-reports/export/excel?date={{ report_date.isoformat() }}', '_blank');
+}
+
+function exportToCSV() {
+    window.open('/marketing/api/team-reports/export/csv?date={{ report_date.isoformat() }}', '_blank');
+}
+
+function scheduleReport() {
+    // Implementation for scheduling reports
+    alert('Schedule report functionality will be implemented');
+}
+</script>
+{% endblock %} 

@@ -1,0 +1,305 @@
+{% extends "base.html" %}
+{% block title %}Team Notifications - Marketing{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">Team Notifications</h1>
+            <p class="text-muted">Manage team announcements and communications</p>
+        </div>
+        <div>
+            <a href="{{ url_for('marketing.team') }}" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left"></i> Back to Team
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Send Notification -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-bullhorn"></i> Send Team Notification
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="type" class="form-label">Notification Type</label>
+                            <select class="form-select" id="type" name="type">
+                                <option value="announcement">Announcement</option>
+                                <option value="reminder">Reminder</option>
+                                <option value="urgent">Urgent</option>
+                                <option value="meeting">Meeting</option>
+                                <option value="update">Update</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="message" class="form-label">Message</label>
+                            <textarea class="form-control" id="message" name="message" rows="5" 
+                                      placeholder="Enter your team notification message..." required></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="urgent" name="urgent">
+                                <label class="form-check-label" for="urgent">
+                                    Mark as urgent (will send immediate notification)
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="email" name="email" checked>
+                                <label class="form-check-label" for="email">
+                                    Send email notification
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <button type="button" class="btn btn-outline-secondary" onclick="previewMessage()">
+                                <i class="fas fa-eye"></i> Preview
+                            </button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-paper-plane"></i> Send Notification
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Recent Notifications -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-history"></i> Recent Notifications
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <div class="d-flex align-items-center mb-1">
+                                        <span class="badge bg-primary me-2">Announcement</span>
+                                        <small class="text-muted">2 hours ago</small>
+                                    </div>
+                                    <h6 class="mb-1">Weekly Team Meeting Tomorrow</h6>
+                                    <p class="mb-1">Don't forget our weekly team meeting tomorrow at 10 AM. We'll be discussing this week's performance and next week's goals.</p>
+                                    <small class="text-muted">Sent by Marketing Manager</small>
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge bg-success">Delivered</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <div class="d-flex align-items-center mb-1">
+                                        <span class="badge bg-warning me-2">Reminder</span>
+                                        <small class="text-muted">1 day ago</small>
+                                    </div>
+                                    <h6 class="mb-1">Lead Follow-up Reminder</h6>
+                                    <p class="mb-1">Please ensure all leads from this week are followed up by end of day. Check your assigned leads in the dashboard.</p>
+                                    <small class="text-muted">Sent by Marketing Manager</small>
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge bg-success">Delivered</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <div class="d-flex align-items-center mb-1">
+                                        <span class="badge bg-danger me-2">Urgent</span>
+                                        <small class="text-muted">3 days ago</small>
+                                    </div>
+                                    <h6 class="mb-1">System Maintenance Tonight</h6>
+                                    <p class="mb-1">System maintenance scheduled for tonight at 11 PM. Please save your work and expect 2 hours of downtime.</p>
+                                    <small class="text-muted">Sent by Marketing Manager</small>
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge bg-success">Delivered</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Team Members -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-users"></i> Team Members
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        {% for member in team.members %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <img src="{{ member.get_profile_image_url() }}" 
+                                     class="rounded-circle me-2" 
+                                     width="32" height="32" 
+                                     alt="{{ member.get_full_name() }}">
+                                <div>
+                                    <div class="fw-bold">{{ member.get_full_name() }}</div>
+                                    <small class="text-muted">{{ member.username }}</small>
+                                </div>
+                            </div>
+                            <div class="text-end">
+                                {% if member.is_online %}
+                                    <span class="badge bg-success">Online</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Offline</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notification Stats -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-bar"></i> Notification Stats
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <h4 class="text-primary">24</h4>
+                            <small class="text-muted">Sent Today</small>
+                        </div>
+                        <div class="col-6">
+                            <h4 class="text-success">98%</h4>
+                            <small class="text-muted">Delivery Rate</small>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <h4 class="text-warning">5</h4>
+                            <small class="text-muted">Pending</small>
+                        </div>
+                        <div class="col-6">
+                            <h4 class="text-info">12</h4>
+                            <small class="text-muted">This Week</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-bolt"></i> Quick Actions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="setQuickMessage('meeting')">
+                            <i class="fas fa-calendar"></i> Meeting Reminder
+                        </button>
+                        <button type="button" class="btn btn-outline-warning btn-sm" onclick="setQuickMessage('deadline')">
+                            <i class="fas fa-clock"></i> Deadline Reminder
+                        </button>
+                        <button type="button" class="btn btn-outline-success btn-sm" onclick="setQuickMessage('achievement')">
+                            <i class="fas fa-trophy"></i> Achievement Announcement
+                        </button>
+                        <button type="button" class="btn btn-outline-info btn-sm" onclick="setQuickMessage('update')">
+                            <i class="fas fa-info-circle"></i> Status Update
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Quick message templates
+const quickMessages = {
+    meeting: {
+        type: 'meeting',
+        message: 'Team meeting scheduled for tomorrow at 10 AM. Please prepare your weekly updates and be ready to discuss goals and achievements.'
+    },
+    deadline: {
+        type: 'reminder',
+        message: 'Important deadline approaching! Please ensure all assigned tasks are completed by the end of the day. Contact me if you need assistance.'
+    },
+    achievement: {
+        type: 'announcement',
+        message: 'Congratulations team! We have achieved our weekly goals. Great work everyone! Keep up the excellent performance.'
+    },
+    update: {
+        type: 'update',
+        message: 'System update: New features have been added to the dashboard. Please check the latest updates and let me know if you have any questions.'
+    }
+};
+
+function setQuickMessage(template) {
+    const messageData = quickMessages[template];
+    document.getElementById('type').value = messageData.type;
+    document.getElementById('message').value = messageData.message;
+}
+
+function previewMessage() {
+    const type = document.getElementById('type').value;
+    const message = document.getElementById('message').value;
+    const urgent = document.getElementById('urgent').checked;
+    
+    if (!message.trim()) {
+        alert('Please enter a message to preview.');
+        return;
+    }
+    
+    const preview = `
+        Type: ${type}
+        Urgent: ${urgent ? 'Yes' : 'No'}
+        Message: ${message}
+    `;
+    
+    alert('Preview:\n\n' + preview);
+}
+
+// Auto-resize textarea
+document.getElementById('message').addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = this.scrollHeight + 'px';
+});
+
+// Form validation
+document.querySelector('form').addEventListener('submit', function(e) {
+    const message = document.getElementById('message').value.trim();
+    
+    if (!message) {
+        e.preventDefault();
+        alert('Please enter a message before sending the notification.');
+        return false;
+    }
+    
+    if (message.length < 10) {
+        e.preventDefault();
+        alert('Message is too short. Please provide more details.');
+        return false;
+    }
+});
+</script>
+{% endblock %} 

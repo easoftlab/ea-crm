@@ -1,0 +1,415 @@
+{% extends "base.html" %}
+{% block title %}Marketing Calls{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">Marketing Calls</h1>
+            <p class="text-muted">View and manage calls made by your marketing team</p>
+        </div>
+        <div>
+            <a href="{{ url_for('marketing.dashboard') }}" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Call Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5 class="card-title text-primary">
+                        <i class="fas fa-phone"></i> Total Calls
+                    </h5>
+                    <h2 class="text-primary">{{ stats.total_calls }}</h2>
+                    <p class="text-muted mb-0">All time</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5 class="card-title text-success">
+                        <i class="fas fa-calendar-day"></i> Today's Calls
+                    </h5>
+                    <h2 class="text-success">{{ stats.today_calls }}</h2>
+                    <p class="text-muted mb-0">Made today</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5 class="card-title text-info">
+                        <i class="fas fa-calendar-week"></i> This Week
+                    </h5>
+                    <h2 class="text-info">{{ stats.week_calls }}</h2>
+                    <p class="text-muted mb-0">Made this week</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5 class="card-title text-warning">
+                        <i class="fas fa-clock"></i> Avg Duration
+                    </h5>
+                    <h2 class="text-warning">{{ "%.0f"|format(stats.avg_duration) }}m</h2>
+                    <p class="text-muted mb-0">Average call time</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Call Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label for="status" class="form-label">Call Status</label>
+                    <select class="form-select" id="status" name="status">
+                        <option value="">All Statuses</option>
+                        <option value="completed" {% if request.args.get('status') == 'completed' %}selected{% endif %}>Completed</option>
+                        <option value="missed" {% if request.args.get('status') == 'missed' %}selected{% endif %}>Missed</option>
+                        <option value="no_answer" {% if request.args.get('status') == 'no_answer' %}selected{% endif %}>No Answer</option>
+                        <option value="voicemail" {% if request.args.get('status') == 'voicemail' %}selected{% endif %}>Voicemail</option>
+                        <option value="busy" {% if request.args.get('status') == 'busy' %}selected{% endif %}>Busy</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="type" class="form-label">Call Type</label>
+                    <select class="form-select" id="type" name="type">
+                        <option value="">All Types</option>
+                        <option value="outbound" {% if request.args.get('type') == 'outbound' %}selected{% endif %}>Outbound</option>
+                        <option value="inbound" {% if request.args.get('type') == 'inbound' %}selected{% endif %}>Inbound</option>
+                        <option value="follow_up" {% if request.args.get('type') == 'follow_up' %}selected{% endif %}>Follow-up</option>
+                        <option value="cold_call" {% if request.args.get('type') == 'cold_call' %}selected{% endif %}>Cold Call</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="date_from" class="form-label">Date From</label>
+                    <input type="date" class="form-control" id="date_from" name="date_from" 
+                           value="{{ request.args.get('date_from', '') }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="date_to" class="form-label">Date To</label>
+                    <input type="date" class="form-control" id="date_to" name="date_to" 
+                           value="{{ request.args.get('date_to', '') }}">
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search"></i> Filter Calls
+                    </button>
+                    <a href="{{ url_for('marketing.calls') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times"></i> Clear Filters
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Calls Table -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-list"></i> Marketing Team Calls
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if calls.items %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Contact</th>
+                            <th>Call Details</th>
+                            <th>Type</th>
+                            <th>Status</th>
+                            <th>Duration</th>
+                            <th>Made By</th>
+                            <th>Date/Time</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for call in calls.items %}
+                        <tr>
+                            <td>
+                                <div>
+                                    <div class="fw-bold">{{ call.contact_name if call.contact_name else 'Unknown' }}</div>
+                                    <small class="text-muted">{{ call.phone_number }}</small>
+                                </div>
+                            </td>
+                            <td>
+                                <div>
+                                    <div>{{ call.call_notes[:50] + '...' if call.call_notes and call.call_notes|length > 50 else call.call_notes or 'No notes' }}</div>
+                                    {% if call.lead %}
+                                        <small class="text-muted">Lead: {{ call.lead.name }}</small>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                {% if call.call_type == 'outbound' %}
+                                    <span class="badge bg-primary">Outbound</span>
+                                {% elif call.call_type == 'inbound' %}
+                                    <span class="badge bg-success">Inbound</span>
+                                {% elif call.call_type == 'follow_up' %}
+                                    <span class="badge bg-info">Follow-up</span>
+                                {% elif call.call_type == 'cold_call' %}
+                                    <span class="badge bg-warning">Cold Call</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ call.call_type|title }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if call.status == 'completed' %}
+                                    <span class="badge bg-success">Completed</span>
+                                {% elif call.status == 'missed' %}
+                                    <span class="badge bg-danger">Missed</span>
+                                {% elif call.status == 'no_answer' %}
+                                    <span class="badge bg-warning">No Answer</span>
+                                {% elif call.status == 'voicemail' %}
+                                    <span class="badge bg-info">Voicemail</span>
+                                {% elif call.status == 'busy' %}
+                                    <span class="badge bg-secondary">Busy</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ call.status|title }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if call.duration %}
+                                    <span class="text-muted">{{ call.duration }}m</span>
+                                {% else %}
+                                    <span class="text-muted">--</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <img src="{{ call.made_by_user.get_profile_image_url() }}" 
+                                         class="rounded-circle me-2" 
+                                         width="24" height="24" 
+                                         alt="{{ call.made_by_user.get_full_name() }}">
+                                    <span>{{ call.made_by_user.get_full_name() }}</span>
+                                </div>
+                            </td>
+                            <td>
+                                <small class="text-muted">{{ call.call_date.strftime('%b %d, %Y %H:%M') }}</small>
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <button type="button" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye"></i> View
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if calls.pages > 1 %}
+            <nav aria-label="Calls pagination">
+                <ul class="pagination justify-content-center">
+                    {% if calls.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('marketing.calls', page=calls.prev_num, **request.args) }}">
+                                <i class="fas fa-chevron-left"></i> Previous
+                            </a>
+                        </li>
+                    {% endif %}
+                    
+                    {% for page_num in calls.iter_pages() %}
+                        {% if page_num %}
+                            {% if page_num != calls.page %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('marketing.calls', page=page_num, **request.args) }}">{{ page_num }}</a>
+                                </li>
+                            {% else %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ page_num }}</span>
+                                </li>
+                            {% endif %}
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">...</span>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if calls.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('marketing.calls', page=calls.next_num, **request.args) }}">
+                                Next <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+            {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-phone fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No calls found</h5>
+                <p class="text-muted">No calls match your current filters</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Call Analytics -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-pie text-primary"></i> Call Status Distribution
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="statusChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-bar text-success"></i> Call Type Distribution
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="typeChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Call Performance -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-line text-info"></i> Daily Call Volume
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="volumeChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Call Status Distribution Chart
+const statusCtx = document.getElementById('statusChart').getContext('2d');
+const statusChart = new Chart(statusCtx, {
+    type: 'doughnut',
+    data: {
+        labels: ['Completed', 'Missed', 'No Answer', 'Voicemail', 'Busy'],
+        datasets: [{
+            data: [
+                {{ stats.status_counts.completed if stats.status_counts.completed else 0 }},
+                {{ stats.status_counts.missed if stats.status_counts.missed else 0 }},
+                {{ stats.status_counts.no_answer if stats.status_counts.no_answer else 0 }},
+                {{ stats.status_counts.voicemail if stats.status_counts.voicemail else 0 }},
+                {{ stats.status_counts.busy if stats.status_counts.busy else 0 }}
+            ],
+            backgroundColor: ['#28a745', '#dc3545', '#ffc107', '#17a2b8', '#6c757d'],
+            borderWidth: 2,
+            borderColor: '#fff'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+
+// Call Type Distribution Chart
+const typeCtx = document.getElementById('typeChart').getContext('2d');
+const typeChart = new Chart(typeCtx, {
+    type: 'bar',
+    data: {
+        labels: ['Outbound', 'Inbound', 'Follow-up', 'Cold Call'],
+        datasets: [{
+            label: 'Number of Calls',
+            data: [
+                {{ stats.type_counts.outbound if stats.type_counts.outbound else 0 }},
+                {{ stats.type_counts.inbound if stats.type_counts.inbound else 0 }},
+                {{ stats.type_counts.follow_up if stats.type_counts.follow_up else 0 }},
+                {{ stats.type_counts.cold_call if stats.type_counts.cold_call else 0 }}
+            ],
+            backgroundColor: 'rgba(40, 167, 69, 0.7)',
+            borderColor: 'rgba(40, 167, 69, 1)',
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        },
+        plugins: {
+            legend: {
+                display: false
+            }
+        }
+    }
+});
+
+// Daily Call Volume Chart
+const volumeCtx = document.getElementById('volumeChart').getContext('2d');
+const volumeChart = new Chart(volumeCtx, {
+    type: 'line',
+    data: {
+        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+        datasets: [{
+            label: 'Calls Made',
+            data: [25, 30, 28, 35, 32, 15, 10],
+            borderColor: 'rgba(40, 167, 69, 1)',
+            backgroundColor: 'rgba(40, 167, 69, 0.1)',
+            tension: 0.4
+        }, {
+            label: 'Calls Completed',
+            data: [20, 25, 22, 28, 26, 12, 8],
+            borderColor: 'rgba(23, 162, 184, 1)',
+            backgroundColor: 'rgba(23, 162, 184, 0.1)',
+            tension: 0.4
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        },
+        plugins: {
+            legend: {
+                position: 'top'
+            }
+        }
+    }
+});
+</script>
+{% endblock %} 

@@ -1,0 +1,345 @@
+{% extends "base.html" %}
+{% block title %}Marketing Leads{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">Marketing Leads</h1>
+            <p class="text-muted">View and manage leads created by your marketing team</p>
+        </div>
+        <div>
+            <a href="{{ url_for('marketing.dashboard') }}" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Lead Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5 class="card-title text-primary">
+                        <i class="fas fa-user-plus"></i> Total Leads
+                    </h5>
+                    <h2 class="text-primary">{{ stats.total_leads }}</h2>
+                    <p class="text-muted mb-0">All time</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5 class="card-title text-success">
+                        <i class="fas fa-calendar-day"></i> Today's Leads
+                    </h5>
+                    <h2 class="text-success">{{ stats.today_leads }}</h2>
+                    <p class="text-muted mb-0">Created today</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5 class="card-title text-info">
+                        <i class="fas fa-calendar-week"></i> This Week
+                    </h5>
+                    <h2 class="text-info">{{ stats.week_leads }}</h2>
+                    <p class="text-muted mb-0">Created this week</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5 class="card-title text-warning">
+                        <i class="fas fa-calendar-alt"></i> This Month
+                    </h5>
+                    <h2 class="text-warning">{{ stats.month_leads }}</h2>
+                    <p class="text-muted mb-0">Created this month</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lead Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label for="status" class="form-label">Status</label>
+                    <select class="form-select" id="status" name="status">
+                        <option value="">All Statuses</option>
+                        <option value="new" {% if request.args.get('status') == 'new' %}selected{% endif %}>New</option>
+                        <option value="contacted" {% if request.args.get('status') == 'contacted' %}selected{% endif %}>Contacted</option>
+                        <option value="qualified" {% if request.args.get('status') == 'qualified' %}selected{% endif %}>Qualified</option>
+                        <option value="converted" {% if request.args.get('status') == 'converted' %}selected{% endif %}>Converted</option>
+                        <option value="lost" {% if request.args.get('status') == 'lost' %}selected{% endif %}>Lost</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="source" class="form-label">Source</label>
+                    <select class="form-select" id="source" name="source">
+                        <option value="">All Sources</option>
+                        <option value="website" {% if request.args.get('source') == 'website' %}selected{% endif %}>Website</option>
+                        <option value="social_media" {% if request.args.get('source') == 'social_media' %}selected{% endif %}>Social Media</option>
+                        <option value="referral" {% if request.args.get('source') == 'referral' %}selected{% endif %}>Referral</option>
+                        <option value="cold_call" {% if request.args.get('source') == 'cold_call' %}selected{% endif %}>Cold Call</option>
+                        <option value="email" {% if request.args.get('source') == 'email' %}selected{% endif %}>Email</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="date_from" class="form-label">Date From</label>
+                    <input type="date" class="form-control" id="date_from" name="date_from" 
+                           value="{{ request.args.get('date_from', '') }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="date_to" class="form-label">Date To</label>
+                    <input type="date" class="form-control" id="date_to" name="date_to" 
+                           value="{{ request.args.get('date_to', '') }}">
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search"></i> Filter Leads
+                    </button>
+                    <a href="{{ url_for('marketing.leads') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times"></i> Clear Filters
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Leads Table -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-list"></i> Marketing Team Leads
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if leads.items %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Lead Name</th>
+                            <th>Contact Info</th>
+                            <th>Source</th>
+                            <th>Status</th>
+                            <th>Created By</th>
+                            <th>Created Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for lead in leads.items %}
+                        <tr>
+                            <td>
+                                <div>
+                                    <div class="fw-bold">{{ lead.name }}</div>
+                                    <small class="text-muted">{{ lead.company if lead.company else 'No company' }}</small>
+                                </div>
+                            </td>
+                            <td>
+                                <div>
+                                    <div>{{ lead.email }}</div>
+                                    <small class="text-muted">{{ lead.phone if lead.phone else 'No phone' }}</small>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary">{{ lead.source|title if lead.source else 'Unknown' }}</span>
+                            </td>
+                            <td>
+                                {% if lead.status == 'new' %}
+                                    <span class="badge bg-primary">New</span>
+                                {% elif lead.status == 'contacted' %}
+                                    <span class="badge bg-info">Contacted</span>
+                                {% elif lead.status == 'qualified' %}
+                                    <span class="badge bg-warning">Qualified</span>
+                                {% elif lead.status == 'converted' %}
+                                    <span class="badge bg-success">Converted</span>
+                                {% elif lead.status == 'lost' %}
+                                    <span class="badge bg-danger">Lost</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ lead.status|title }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <img src="{{ lead.creator.get_profile_image_url() }}" 
+                                         class="rounded-circle me-2" 
+                                         width="24" height="24" 
+                                         alt="{{ lead.creator.get_full_name() }}">
+                                    <span>{{ lead.creator.get_full_name() }}</span>
+                                </div>
+                            </td>
+                            <td>
+                                <small class="text-muted">{{ lead.created_at.strftime('%b %d, %Y') }}</small>
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <button type="button" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye"></i> View
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if leads.pages > 1 %}
+            <nav aria-label="Leads pagination">
+                <ul class="pagination justify-content-center">
+                    {% if leads.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('marketing.leads', page=leads.prev_num, **request.args) }}">
+                                <i class="fas fa-chevron-left"></i> Previous
+                            </a>
+                        </li>
+                    {% endif %}
+                    
+                    {% for page_num in leads.iter_pages() %}
+                        {% if page_num %}
+                            {% if page_num != leads.page %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('marketing.leads', page=page_num, **request.args) }}">{{ page_num }}</a>
+                                </li>
+                            {% else %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ page_num }}</span>
+                                </li>
+                            {% endif %}
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">...</span>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if leads.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('marketing.leads', page=leads.next_num, **request.args) }}">
+                                Next <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+            {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-user-plus fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No leads found</h5>
+                <p class="text-muted">No leads match your current filters</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Lead Analytics -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-pie text-primary"></i> Lead Status Distribution
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="statusChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-bar text-success"></i> Lead Source Distribution
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="sourceChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Lead Status Distribution Chart
+const statusCtx = document.getElementById('statusChart').getContext('2d');
+const statusChart = new Chart(statusCtx, {
+    type: 'doughnut',
+    data: {
+        labels: ['New', 'Contacted', 'Qualified', 'Converted', 'Lost'],
+        datasets: [{
+            data: [
+                {{ stats.status_counts.new if stats.status_counts.new else 0 }},
+                {{ stats.status_counts.contacted if stats.status_counts.contacted else 0 }},
+                {{ stats.status_counts.qualified if stats.status_counts.qualified else 0 }},
+                {{ stats.status_counts.converted if stats.status_counts.converted else 0 }},
+                {{ stats.status_counts.lost if stats.status_counts.lost else 0 }}
+            ],
+            backgroundColor: ['#007bff', '#17a2b8', '#ffc107', '#28a745', '#dc3545'],
+            borderWidth: 2,
+            borderColor: '#fff'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+
+// Lead Source Distribution Chart
+const sourceCtx = document.getElementById('sourceChart').getContext('2d');
+const sourceChart = new Chart(sourceCtx, {
+    type: 'bar',
+    data: {
+        labels: ['Website', 'Social Media', 'Referral', 'Cold Call', 'Email'],
+        datasets: [{
+            label: 'Number of Leads',
+            data: [
+                {{ stats.source_counts.website if stats.source_counts.website else 0 }},
+                {{ stats.source_counts.social_media if stats.source_counts.social_media else 0 }},
+                {{ stats.source_counts.referral if stats.source_counts.referral else 0 }},
+                {{ stats.source_counts.cold_call if stats.source_counts.cold_call else 0 }},
+                {{ stats.source_counts.email if stats.source_counts.email else 0 }}
+            ],
+            backgroundColor: 'rgba(40, 167, 69, 0.7)',
+            borderColor: 'rgba(40, 167, 69, 1)',
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        },
+        plugins: {
+            legend: {
+                display: false
+            }
+        }
+    }
+});
+</script>
+{% endblock %} 

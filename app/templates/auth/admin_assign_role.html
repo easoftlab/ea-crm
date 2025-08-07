@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-info text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-user-plus"></i> Assign Users to Role: {{ role.name }}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+                    
+                    <div class="row">
+                        <!-- Users with this role -->
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header bg-success text-white">
+                                    <h5 class="mb-0">
+                                        <i class="fas fa-users"></i> Users with this Role ({{ users_with_role|length }})
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    {% if users_with_role %}
+                                        <div class="list-group">
+                                            {% for user in users_with_role %}
+                                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <strong>{{ user.username }}</strong><br>
+                                                    <small class="text-muted">{{ user.email }}</small>
+                                                </div>
+                                                <form method="POST" style="display: inline;">
+                                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                    <input type="hidden" name="user_id" value="{{ user.id }}">
+                                                    <input type="hidden" name="action" value="remove">
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger" 
+                                                            onclick="return confirm('Remove {{ user.username }} from this role?')">
+                                                        <i class="fas fa-user-minus"></i> Remove
+                                                    </button>
+                                                </form>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    {% else %}
+                                        <div class="text-center py-3">
+                                            <i class="fas fa-user-slash fa-2x text-muted mb-2"></i>
+                                            <p class="text-muted">No users assigned to this role</p>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Users without this role -->
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header bg-warning text-white">
+                                    <h5 class="mb-0">
+                                        <i class="fas fa-user-plus"></i> Available Users ({{ users_without_role|length }})
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    {% if users_without_role %}
+                                        <div class="list-group">
+                                            {% for user in users_without_role %}
+                                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <strong>{{ user.username }}</strong><br>
+                                                    <small class="text-muted">{{ user.email }}</small><br>
+                                                    <small class="badge bg-secondary">{{ user.role.name }}</small>
+                                                </div>
+                                                <form method="POST" style="display: inline;">
+                                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                    <input type="hidden" name="user_id" value="{{ user.id }}">
+                                                    <input type="hidden" name="action" value="assign">
+                                                    <button type="submit" class="btn btn-sm btn-outline-success">
+                                                        <i class="fas fa-user-plus"></i> Assign
+                                                    </button>
+                                                </form>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    {% else %}
+                                        <div class="text-center py-3">
+                                            <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+                                            <p class="text-muted">All users are already assigned to this role</p>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <a href="{{ url_for('auth.admin_roles') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to Roles
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

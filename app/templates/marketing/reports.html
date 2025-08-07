@@ -1,0 +1,319 @@
+{% extends "base.html" %}
+{% block title %}Marketing Reports{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">Marketing Reports</h1>
+            <p class="text-muted">Generate and view marketing team reports</p>
+        </div>
+        <div>
+            <a href="{{ url_for('marketing.dashboard') }}" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Report Schedules -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-calendar-alt text-primary"></i> Report Schedules
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if report_schedules %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Report Type</th>
+                                    <th>Frequency</th>
+                                    <th>Delivery Method</th>
+                                    <th>Schedule</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for schedule in report_schedules %}
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-primary">{{ schedule.report_type|title }}</span>
+                                    </td>
+                                    <td>{{ schedule.report_frequency|title }}</td>
+                                    <td>{{ schedule.delivery_method|title }}</td>
+                                    <td>
+                                        {% if schedule.schedule_time %}
+                                            {{ schedule.schedule_time.strftime('%H:%M') }}
+                                            {% if schedule.schedule_day %}
+                                                on {{ schedule.schedule_day|title }}
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-muted">Not set</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if schedule.is_active %}
+                                            <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <button type="button" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-edit"></i> Edit
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary">
+                                                <i class="fas fa-play"></i> Run Now
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-calendar fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No report schedules found</h5>
+                        <p class="text-muted">Create report schedules to automate report generation</p>
+                        <button type="button" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Create Schedule
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-bar text-success"></i> Quick Actions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('marketing.team_reports_daily') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-calendar-day"></i> Daily Reports
+                        </a>
+                        <a href="{{ url_for('marketing.team_reports_weekly') }}" class="btn btn-outline-success">
+                            <i class="fas fa-calendar-week"></i> Weekly Reports
+                        </a>
+                        <a href="{{ url_for('marketing.team_reports_monthly') }}" class="btn btn-outline-info">
+                            <i class="fas fa-calendar-alt"></i> Monthly Reports
+                        </a>
+                        <button type="button" class="btn btn-outline-warning">
+                            <i class="fas fa-download"></i> Export All
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Reports -->
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-calendar-day text-primary"></i> Recent Daily Reports
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_daily_reports %}
+                    <div class="list-group list-group-flush">
+                        {% for report in recent_daily_reports[:5] %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="fw-bold">{{ report.user.get_full_name() }}</div>
+                                <small class="text-muted">{{ report.report_date.strftime('%B %d, %Y') }}</small>
+                            </div>
+                            <div class="text-end">
+                                <div class="badge bg-primary">{{ report.leads_created }} leads</div>
+                                <div class="badge bg-info">{{ report.calls_made }} calls</div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-3">
+                        <i class="fas fa-calendar-day fa-2x text-muted mb-2"></i>
+                        <p class="text-muted mb-0">No recent daily reports</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-calendar-week text-success"></i> Recent Weekly Reports
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_weekly_reports %}
+                    <div class="list-group list-group-flush">
+                        {% for report in recent_weekly_reports[:5] %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="fw-bold">{{ report.user.get_full_name() }}</div>
+                                <small class="text-muted">Week of {{ report.week_start.strftime('%B %d, %Y') }}</small>
+                            </div>
+                            <div class="text-end">
+                                <div class="badge bg-success">{{ report.total_leads_created }} leads</div>
+                                <div class="badge bg-warning">{{ report.total_calls_made }} calls</div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-3">
+                        <i class="fas fa-calendar-week fa-2x text-muted mb-2"></i>
+                        <p class="text-muted mb-0">No recent weekly reports</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-calendar-alt text-info"></i> Recent Monthly Reports
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_monthly_reports %}
+                    <div class="list-group list-group-flush">
+                        {% for report in recent_monthly_reports[:5] %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="fw-bold">{{ report.user.get_full_name() }}</div>
+                                <small class="text-muted">{{ report.month_year.strftime('%B %Y') }}</small>
+                            </div>
+                            <div class="text-end">
+                                <div class="badge bg-info">{{ report.total_leads_created }} leads</div>
+                                <div class="badge bg-secondary">{{ report.total_calls_made }} calls</div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-3">
+                        <i class="fas fa-calendar-alt fa-2x text-muted mb-2"></i>
+                        <p class="text-muted mb-0">No recent monthly reports</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Analytics -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-line text-primary"></i> Report Generation Trend
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="reportTrendChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-pie text-success"></i> Report Type Distribution
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="reportTypeChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Report Generation Trend Chart
+const trendCtx = document.getElementById('reportTrendChart').getContext('2d');
+const trendChart = new Chart(trendCtx, {
+    type: 'line',
+    data: {
+        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+        datasets: [{
+            label: 'Daily Reports',
+            data: [12, 19, 15, 25, 22, 30],
+            borderColor: 'rgba(40, 167, 69, 1)',
+            backgroundColor: 'rgba(40, 167, 69, 0.1)',
+            tension: 0.4
+        }, {
+            label: 'Weekly Reports',
+            data: [4, 6, 5, 8, 7, 10],
+            borderColor: 'rgba(23, 162, 184, 1)',
+            backgroundColor: 'rgba(23, 162, 184, 0.1)',
+            tension: 0.4
+        }, {
+            label: 'Monthly Reports',
+            data: [1, 2, 1, 2, 2, 3],
+            borderColor: 'rgba(255, 193, 7, 1)',
+            backgroundColor: 'rgba(255, 193, 7, 0.1)',
+            tension: 0.4
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        },
+        plugins: {
+            legend: {
+                position: 'top'
+            }
+        }
+    }
+});
+
+// Report Type Distribution Chart
+const typeCtx = document.getElementById('reportTypeChart').getContext('2d');
+const typeChart = new Chart(typeCtx, {
+    type: 'doughnut',
+    data: {
+        labels: ['Daily Reports', 'Weekly Reports', 'Monthly Reports'],
+        datasets: [{
+            data: [65, 25, 10],
+            backgroundColor: ['#28a745', '#17a2b8', '#ffc107'],
+            borderWidth: 2,
+            borderColor: '#fff'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+</script>
+{% endblock %} 

@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block title %}{{ client.client_name }} - Client Details{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2><i class="fas fa-user"></i> {{ client.client_name }} ({{ client.client_id }})</h2>
+                <div>
+                    <a href="{{ url_for('main.converted_clients_management') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Clients
+                    </a>
+                    <a href="{{ url_for('main.create_client_projection', client_id=client.id) }}" class="btn btn-success">
+                        <i class="fas fa-plus"></i> Add Projection
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Client Info -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-info-circle"></i> Client Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Client ID:</strong> <span class="badge bg-secondary">{{ client.client_id }}</span></p>
+                            <p><strong>Name:</strong> {{ client.client_name }}</p>
+                            <p><strong>Company:</strong> {{ client.company_name }}</p>
+                            <p><strong>Industry:</strong> {{ client.industry or 'N/A' }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Country:</strong> {{ client.country or 'N/A' }}</p>
+                            <p><strong>Status:</strong> 
+                                <span class="badge bg-{{ 'success' if client.status == 'active' else 'warning' if client.status == 'inactive' else 'info' }}">
+                                    {{ client.status|title }}
+                                </span>
+                            </p>
+                            <p><strong>Converted:</strong> {{ client.converted_at.strftime('%Y-%m-%d') }}</p>
+                            <p><strong>By:</strong> {{ client.converter.get_full_name() }}</p>
+                        </div>
+                    </div>
+                    {% if client.notes %}
+                    <hr>
+                    <p><strong>Notes:</strong></p>
+                    <p class="text-muted">{{ client.notes }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-line"></i> Current Month Summary</h5>
+                </div>
+                <div class="card-body">
+                    {% if projections %}
+                        <div class="row text-center">
+                            {% set revenue_projection = projections|selectattr('projection_type', 'equalto', 'revenue')|first %}
+                            {% set work_volume_projection = projections|selectattr('projection_type', 'equalto', 'work_volume')|first %}
+                            {% set tasks_projection = projections|selectattr('projection_type', 'equalto', 'tasks')|first %}
+                            
+                            <div class="col-md-4">
+                                <h6 class="text-muted">Revenue</h6>
+                                {% if revenue_projection %}
+                                    <h4 class="text-{{ revenue_projection.get_status_color() }}">${{ "{:,}".format(revenue_projection.actual_value) }}</h4>
+                                    <small class="text-muted">Target: ${{ "{:,}".format(revenue_projection.target_value) }}</small>
+                                {% else %}
+                                    <h4 class="text-muted">$0</h4>
+                                    <small class="text-muted">No projection set</small>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <h6 class="text-muted">Work Volume</h6>
+                                {% if work_volume_projection %}
+                                    <h4 class="text-{{ work_volume_projection.get_status_color() }}">{{ work_volume_projection.actual_value }}</h4>
+                                    <small class="text-muted">Target: {{ work_volume_projection.target_value }}</small>
+                                {% else %}
+                                    <h4 class="text-muted">0</h4>
+                                    <small class="text-muted">No projection set</small>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <h6 class="text-muted">Tasks</h6>
+                                {% if tasks_projection %}
+                                    <h4 class="text-{{ tasks_projection.get_status_color() }}">{{ tasks_projection.actual_value }}</h4>
+                                    <small class="text-muted">Target: {{ tasks_projection.target_value }}</small>
+                                {% else %}
+                                    <h4 class="text-muted">0</h4>
+                                    <small class="text-muted">No projection set</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-3">
+                            <i class="fas fa-chart-bar fa-2x text-muted mb-2"></i>
+                            <h6 class="text-muted">No projections set for {{ current_month.strftime('%B %Y') }}</h6>
+                            {% if current_user.has_permission('manage_leads') and current_user.role.name != 'Caller' %}
+                            <a href="{{ url_for('main.create_client_projection', client_id=client.id) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-plus"></i> Set Projections
+                            </a>
+                            {% else %}
+                            <small class="text-muted">Only Managers can set projections</small>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Projections -->
+    {% if projections %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-line"></i> {{ current_month.strftime('%B %Y') }} Projections</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for projection in projections %}
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100 border-{{ projection.get_status_color() }}">
+                                <div class="card-header bg-{{ projection.get_status_color() }} text-white">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-{{ 'dollar-sign' if projection.projection_type == 'revenue' else 'briefcase' if projection.projection_type == 'work_volume' else 'tasks' }}"></i>
+                                        {{ projection.projection_type|replace('_', ' ')|title }}
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row text-center">
+                                        <div class="col-6">
+                                            <h6 class="text-muted">Target</h6>
+                                            <h4 class="text-primary">
+                                                {% if projection.projection_type == 'revenue' %}
+                                                    ${{ "{:,}".format(projection.target_value) }}
+                                                {% else %}
+                                                    {{ projection.target_value }}
+                                                {% endif %}
+                                            </h4>
+                                        </div>
+                                        <div class="col-6">
+                                            <h6 class="text-muted">Actual</h6>
+                                            <h4 class="text-{{ projection.get_status_color() }}">
+                                                {% if projection.projection_type == 'revenue' %}
+                                                    ${{ "{:,}".format(projection.actual_value) }}
+                                                {% else %}
+                                                    {{ projection.actual_value }}
+                                                {% endif %}
+                                            </h4>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Progress Bar -->
+                                    <div class="mt-3">
+                                        <div class="d-flex justify-content-between mb-1">
+                                            <span class="text-muted">Progress</span>
+                                            <span class="text-{{ projection.get_status_color() }} fw-bold">{{ "%.1f"|format(projection.completion_percentage) }}%</span>
+                                        </div>
+                                        <div class="progress" style="height: 8px;">
+                                            <div class="progress-bar bg-{{ projection.get_status_color() }}" 
+                                                 style="width: {{ projection.completion_percentage }}%">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Status Badge -->
+                                    <div class="mt-2 text-center">
+                                        {% if projection.completion_percentage >= 100 %}
+                                            <span class="badge bg-success">Target Achieved!</span>
+                                        {% elif projection.completion_percentage >= 75 %}
+                                            <span class="badge bg-warning">On Track</span>
+                                        {% elif projection.completion_percentage >= 50 %}
+                                            <span class="badge bg-info">In Progress</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Needs Attention</span>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <!-- Notes -->
+                                    {% if projection.notes %}
+                                    <div class="mt-2">
+                                        <small class="text-muted">
+                                            <strong>Notes:</strong> {{ projection.notes[:50] }}{% if projection.notes|length > 50 %}...{% endif %}
+                                        </small>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %} 

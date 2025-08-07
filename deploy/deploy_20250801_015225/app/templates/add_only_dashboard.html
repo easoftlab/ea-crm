@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block title %}Add Lead{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-plus-circle"></i> Lead Generator Dashboard
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="alert alert-info">
+                                <h5><i class="fas fa-info-circle"></i> Welcome, Lead Generator!</h5>
+                                <p class="mb-0">
+                                    You have access to add new leads to the system. 
+                                    Use the form below to create new lead entries.
+                                </p>
+                            </div>
+                            
+                            <!-- Add Lead Form -->
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5><i class="fas fa-plus"></i> Add New Lead</h5>
+                                </div>
+                                <div class="card-body">
+                                    <form method="POST" action="{{ url_for('main.add_lead') }}">
+                                        <!-- <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"> -->
+                                        
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label for="company_name" class="form-label">Company Name *</label>
+                                                <input type="text" class="form-control" id="company_name" name="company_name" required>
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label for="company_website" class="form-label">Company Website *</label>
+                                                <input type="url" class="form-control" id="company_website" name="company_website" required>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="row">
+                                            <div class="col-md-4 mb-3">
+                                                <label for="country" class="form-label">Country *</label>
+                                                <select class="form-select" id="country" name="country" required>
+                                                    <option value="">Select Country</option>
+                                                    <option value="USA">USA</option>
+                                                    <option value="UK">UK</option>
+                                                    <option value="Australia">Australia</option>
+                                                    <!-- Add more countries as needed -->
+                                                </select>
+                                            </div>
+                                            <div class="col-md-4 mb-3">
+                                                <label for="state" class="form-label">State</label>
+                                                <input type="text" class="form-control" id="state" name="state">
+                                            </div>
+                                            <div class="col-md-4 mb-3">
+                                                <label for="industry" class="form-label">Industry *</label>
+                                                <select class="form-select" id="industry" name="industry" required>
+                                                    <option value="">Select Industry</option>
+                                                    <option value="E-commerce / Online Retail">E-commerce / Online Retail</option>
+                                                    <option value="Fashion & Apparel">Fashion & Apparel</option>
+                                                    <option value="Real Estate">Real Estate</option>
+                                                    <option value="Photography Studios">Photography Studios</option>
+                                                    <option value="Advertising & Creative Agencies">Advertising & Creative Agencies</option>
+                                                    <option value="Marketing Firms">Marketing Firms</option>
+                                                    <!-- Add more industries as needed -->
+                                                </select>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label for="source" class="form-label">Source</label>
+                                                <select class="form-select" id="source" name="source">
+                                                    <option value="">Select Source</option>
+                                                    <option value="Website">Website</option>
+                                                    <option value="Referral">Referral</option>
+                                                    <option value="Social Media">Social Media</option>
+                                                    <option value="Email Campaign">Email Campaign</option>
+                                                    <option value="Phone Call">Phone Call</option>
+                                                    <option value="Walk-in">Walk-in</option>
+                                                    <option value="Event">Event</option>
+                                                    <option value="Other">Other</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label for="timezone" class="form-label">Timezone</label>
+                                                <select class="form-select" id="timezone" name="timezone">
+                                                    <option value="">Select Timezone</option>
+                                                    <option value="EST">EST</option>
+                                                    <option value="CST">CST</option>
+                                                    <option value="MST">MST</option>
+                                                    <option value="PST">PST</option>
+                                                    <option value="AKST">AKST</option>
+                                                    <option value="HST">HST</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="notes" class="form-label">Notes</label>
+                                            <textarea class="form-control" id="notes" name="notes" rows="3" placeholder="Enter any additional notes about this lead..."></textarea>
+                                        </div>
+                                        
+                                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                            <button type="submit" class="btn btn-success">
+                                                <i class="fas fa-save"></i> Add Lead
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-header bg-light">
+                                    <h6><i class="fas fa-lightbulb"></i> Quick Tips</h6>
+                                </div>
+                                <div class="card-body">
+                                    <ul class="list-unstyled">
+                                        <li class="mb-2">
+                                            <i class="fas fa-check-circle text-success"></i>
+                                            Fill in all required fields marked with *
+                                        </li>
+                                        <li class="mb-2">
+                                            <i class="fas fa-check-circle text-success"></i>
+                                            Use accurate company names and websites
+                                        </li>
+                                        <li class="mb-2">
+                                            <i class="fas fa-check-circle text-success"></i>
+                                            Add detailed notes for better lead tracking
+                                        </li>
+                                        <li class="mb-2">
+                                            <i class="fas fa-check-circle text-success"></i>
+                                            Select appropriate industry and source
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                            
+                            <div class="card mt-3">
+                                <div class="card-header bg-light">
+                                    <h6><i class="fas fa-user"></i> Your Role</h6>
+                                </div>
+                                <div class="card-body">
+                                    <p class="small text-muted">
+                                        As a Lead Generator, you can:
+                                    </p>
+                                    <ul class="list-unstyled small">
+                                        <li><i class="fas fa-plus text-primary"></i> Add new leads</li>
+                                        <li><i class="fas fa-user text-primary"></i> Update your profile</li>
+                                        <li><i class="fas fa-key text-primary"></i> Change your password</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

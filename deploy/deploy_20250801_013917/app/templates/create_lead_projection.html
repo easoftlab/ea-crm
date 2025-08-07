@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}Create Projection for {{ lead.company_name }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-plus"></i> Create Projection for {{ lead.company_name }}</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        
+                        <div class="mb-3">
+                            <label for="projection_type" class="form-label">Projection Type *</label>
+                            <select class="form-select" id="projection_type" name="projection_type" required>
+                                <option value="">Select projection type</option>
+                                <option value="revenue">Revenue ($)</option>
+                                <option value="work_volume">Work Volume (Hours)</option>
+                                <option value="tasks">Tasks</option>
+                            </select>
+                            <div class="form-text">Choose what you want to project for this converted lead</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="target_value" class="form-label">Target Value *</label>
+                            <input type="number" class="form-control" id="target_value" name="target_value" 
+                                   min="1" required placeholder="Enter your target">
+                            <div class="form-text">Set your monthly target for this converted lead</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="month_year" class="form-label">Month *</label>
+                            <input type="month" class="form-control" id="month_year" name="month_year" 
+                                   required value="{{ current_month.strftime('%Y-%m') }}">
+                            <div class="form-text">Select the month for this projection</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Notes</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="3" 
+                                      placeholder="Add any notes about this projection"></textarea>
+                            <div class="form-text">Optional notes to help track progress</div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('main.view_converted_lead', lead_id=lead.id) }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Back to Lead
+                            </a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-save"></i> Create Projection
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Projection Guidelines -->
+            <div class="card mt-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-info-circle"></i> Projection Guidelines</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <h6><i class="fas fa-dollar-sign text-success"></i> Revenue</h6>
+                            <p class="small text-muted">Set targets for the revenue amount you want to generate from this converted lead this month.</p>
+                        </div>
+                        <div class="col-md-4">
+                            <h6><i class="fas fa-briefcase text-warning"></i> Work Volume</h6>
+                            <p class="small text-muted">Set targets for the number of hours or work units you want to complete for this converted lead.</p>
+                        </div>
+                        <div class="col-md-4">
+                            <h6><i class="fas fa-tasks text-info"></i> Tasks</h6>
+                            <p class="small text-muted">Set targets for the number of tasks you want to complete for this converted lead this month.</p>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-lightbulb"></i> Tips for Setting Converted Lead Targets:</h6>
+                        <ul class="mb-0">
+                            <li>Consider the lead's conversion value and potential</li>
+                            <li>Account for ongoing work and maintenance</li>
+                            <li>Set realistic but challenging goals</li>
+                            <li>Review and adjust based on performance</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

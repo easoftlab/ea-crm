@@ -1,0 +1,500 @@
+{% extends "base.html" %}
+
+{% block title %}Team Member Report - {{ member.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .report-card {
+        transition: transform 0.2s;
+    }
+    .report-card:hover {
+        transform: translateY(-2px);
+    }
+    .metric-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    .productivity-score {
+        font-size: 2.5rem;
+        font-weight: bold;
+    }
+    .activity-chart {
+        height: 300px;
+    }
+    .task-list {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+    .status-badge {
+        font-size: 0.8rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="mb-1">
+                        <i class="fas fa-user-chart me-2"></i>Team Member Report
+                    </h2>
+                    <p class="text-muted mb-0">{{ member.name }} - {{ member.email }}</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('productions.team_reports') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Back to Reports
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Date Filter -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="GET" class="row align-items-end">
+                        <div class="col-md-4">
+                            <label for="date" class="form-label">Report Date</label>
+                            <input type="date" class="form-control" id="date" name="date" 
+                                   value="{{ report_date.isoformat() }}" onchange="this.form.submit()">
+                        </div>
+                        <div class="col-md-8">
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-warning">
+                                    <i class="fas fa-filter me-1"></i>Filter
+                                </button>
+                                <a href="{{ url_for('productions.team_member_report', member_id=member.id) }}" 
+                                   class="btn btn-outline-secondary">
+                                    <i class="fas fa-calendar-day me-1"></i>Today
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Key Metrics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card metric-card">
+                <div class="card-body text-center">
+                    <h6 class="card-title">Daily Productivity</h6>
+                    <div class="productivity-score">
+                        {{ daily_report.productivity_score | round(1) if daily_report else 0 }}%
+                    </div>
+                    <small>Today's Score</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card metric-card">
+                <div class="card-body text-center">
+                    <h6 class="card-title">Active Time</h6>
+                    <div class="productivity-score">
+                        {{ (daily_report.active_time / 60) | round(1) if daily_report and daily_report.active_time else 0 }}h
+                    </div>
+                    <small>Hours Active</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card metric-card">
+                <div class="card-body text-center">
+                    <h6 class="card-title">Tasks Completed</h6>
+                    <div class="productivity-score">
+                        {{ daily_report.tasks_completed if daily_report else 0 }}
+                    </div>
+                    <small>Today's Tasks</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card metric-card">
+                <div class="card-body text-center">
+                    <h6 class="card-title">Efficiency</h6>
+                    <div class="productivity-score">
+                        {{ daily_report.efficiency_score | round(1) if daily_report else 0 }}%
+                    </div>
+                    <small>Task Efficiency</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Tabs -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <ul class="nav nav-tabs card-header-tabs" id="reportTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="daily-tab" data-bs-toggle="tab" 
+                                    data-bs-target="#daily" type="button" role="tab">
+                                <i class="fas fa-calendar-day me-1"></i>Daily Report
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="weekly-tab" data-bs-toggle="tab" 
+                                    data-bs-target="#weekly" type="button" role="tab">
+                                <i class="fas fa-calendar-week me-1"></i>Weekly Report
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="monthly-tab" data-bs-toggle="tab" 
+                                    data-bs-target="#monthly" type="button" role="tab">
+                                <i class="fas fa-calendar-alt me-1"></i>Monthly Report
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+                <div class="card-body">
+                    <div class="tab-content" id="reportTabsContent">
+                        <!-- Daily Report Tab -->
+                        <div class="tab-pane fade show active" id="daily" role="tabpanel">
+                            {% if daily_report %}
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h5>Daily Performance Summary</h5>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm">
+                                            <tbody>
+                                                                                                 <tr>
+                                                     <td><strong>Date:</strong></td>
+                                                     <td>{{ daily_report.report_date.strftime('%B %d, %Y') if daily_report and daily_report.report_date else report_date.strftime('%B %d, %Y') }}</td>
+                                                 </tr>
+                                                                                                 <tr>
+                                                     <td><strong>Productivity Score:</strong></td>
+                                                     <td>{{ daily_report.productivity_score | round(1) if daily_report and daily_report.productivity_score else 0 }}%</td>
+                                                 </tr>
+                                                 <tr>
+                                                     <td><strong>Active Time:</strong></td>
+                                                     <td>{{ (daily_report.active_time / 60) | round(1) if daily_report and daily_report.active_time else 0 }} hours</td>
+                                                 </tr>
+                                                 <tr>
+                                                     <td><strong>Idle Time:</strong></td>
+                                                     <td>{{ (daily_report.idle_time / 60) | round(1) if daily_report and daily_report.idle_time else 0 }} hours</td>
+                                                 </tr>
+                                                 <tr>
+                                                     <td><strong>Tasks Completed:</strong></td>
+                                                     <td>{{ daily_report.tasks_completed if daily_report else 0 }}</td>
+                                                 </tr>
+                                                 <tr>
+                                                     <td><strong>Tasks Assigned:</strong></td>
+                                                     <td>{{ daily_report.tasks_assigned if daily_report else 0 }}</td>
+                                                 </tr>
+                                                 <tr>
+                                                     <td><strong>Efficiency Score:</strong></td>
+                                                     <td>{{ daily_report.efficiency_score | round(1) if daily_report and daily_report.efficiency_score else 0 }}%</td>
+                                                 </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <h5>Activity Breakdown</h5>
+                                    <div class="activity-chart">
+                                        <canvas id="dailyActivityChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                            {% else %}
+                            <div class="text-center py-5">
+                                <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
+                                <h5 class="text-muted">No daily report available for {{ report_date.strftime('%B %d, %Y') }}</h5>
+                                <p class="text-muted">The report may not have been generated yet or the date is in the future.</p>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Weekly Report Tab -->
+                        <div class="tab-pane fade" id="weekly" role="tabpanel">
+                            {% if weekly_report %}
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h5>Weekly Performance Summary</h5>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm">
+                                            <tbody>
+                                                                                                 <tr>
+                                                     <td><strong>Week Starting:</strong></td>
+                                                     <td>{{ weekly_report.week_start.strftime('%B %d, %Y') if weekly_report and weekly_report.week_start else 'N/A' }}</td>
+                                                 </tr>
+                                                                                                 <tr>
+                                                     <td><strong>Average Productivity:</strong></td>
+                                                     <td>{{ weekly_report.avg_productivity_score | round(1) if weekly_report and weekly_report.avg_productivity_score else 0 }}%</td>
+                                                 </tr>
+                                                 <tr>
+                                                     <td><strong>Total Active Time:</strong></td>
+                                                     <td>{{ (weekly_report.total_active_time / 60) | round(1) if weekly_report and weekly_report.total_active_time else 0 }} hours</td>
+                                                 </tr>
+                                                 <tr>
+                                                     <td><strong>Total Tasks Completed:</strong></td>
+                                                     <td>{{ weekly_report.total_tasks_completed if weekly_report else 0 }}</td>
+                                                 </tr>
+                                                 <tr>
+                                                     <td><strong>Average Efficiency:</strong></td>
+                                                     <td>{{ weekly_report.avg_efficiency_score | round(1) if weekly_report and weekly_report.avg_efficiency_score else 0 }}%</td>
+                                                 </tr>
+                                                 <tr>
+                                                     <td><strong>Best Day:</strong></td>
+                                                     <td>{{ weekly_report.best_performance_day if weekly_report else 'N/A' }}</td>
+                                                 </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <h5>Weekly Trend</h5>
+                                    <div class="activity-chart">
+                                        <canvas id="weeklyActivityChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                            {% else %}
+                            <div class="text-center py-5">
+                                <i class="fas fa-calendar-week fa-3x text-muted mb-3"></i>
+                                <h5 class="text-muted">No weekly report available</h5>
+                                <p class="text-muted">Weekly reports are generated at the end of each week.</p>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Monthly Report Tab -->
+                        <div class="tab-pane fade" id="monthly" role="tabpanel">
+                            {% if monthly_report %}
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h5>Monthly Performance Summary</h5>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm">
+                                            <tbody>
+                                                                                                 <tr>
+                                                     <td><strong>Month:</strong></td>
+                                                     <td>{{ monthly_report.month_year.strftime('%B %Y') if monthly_report and monthly_report.month_year else 'N/A' }}</td>
+                                                 </tr>
+                                                                                                 <tr>
+                                                     <td><strong>Average Productivity:</strong></td>
+                                                     <td>{{ monthly_report.avg_productivity_score | round(1) if monthly_report and monthly_report.avg_productivity_score else 0 }}%</td>
+                                                 </tr>
+                                                 <tr>
+                                                     <td><strong>Total Active Time:</strong></td>
+                                                     <td>{{ (monthly_report.total_active_time / 60) | round(1) if monthly_report and monthly_report.total_active_time else 0 }} hours</td>
+                                                 </tr>
+                                                 <tr>
+                                                     <td><strong>Total Tasks Completed:</strong></td>
+                                                     <td>{{ monthly_report.total_tasks_completed if monthly_report else 0 }}</td>
+                                                 </tr>
+                                                 <tr>
+                                                     <td><strong>Average Efficiency:</strong></td>
+                                                     <td>{{ monthly_report.avg_efficiency_score | round(1) if monthly_report and monthly_report.avg_efficiency_score else 0 }}%</td>
+                                                 </tr>
+                                                 <tr>
+                                                     <td><strong>Best Week:</strong></td>
+                                                     <td>Week {{ monthly_report.best_performance_week if monthly_report else 'N/A' }}</td>
+                                                 </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <h5>Monthly Overview</h5>
+                                    <div class="activity-chart">
+                                        <canvas id="monthlyActivityChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                            {% else %}
+                            <div class="text-center py-5">
+                                <i class="fas fa-calendar-alt fa-3x text-muted mb-3"></i>
+                                <h5 class="text-muted">No monthly report available</h5>
+                                <p class="text-muted">Monthly reports are generated at the end of each month.</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Tasks -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-list me-2"></i>Recent Tasks
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive task-list">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Task</th>
+                                    <th>Type</th>
+                                    <th>Priority</th>
+                                    <th>Status</th>
+                                    <th>Due Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for task in member.assigned_production_tasks[:10] %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ task.title }}</strong>
+                                        <br>
+                                        <small class="text-muted">{{ task.description[:50] }}...</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info status-badge">{{ task.task_type }}</span>
+                                    </td>
+                                    <td>
+                                        {% if task.priority == 'high' %}
+                                            <span class="badge bg-danger status-badge">High</span>
+                                        {% elif task.priority == 'medium' %}
+                                            <span class="badge bg-warning status-badge">Medium</span>
+                                        {% else %}
+                                            <span class="badge bg-success status-badge">Low</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if task.status == 'completed' %}
+                                            <span class="badge bg-success status-badge">Completed</span>
+                                        {% elif task.status == 'in_progress' %}
+                                            <span class="badge bg-warning status-badge">In Progress</span>
+                                        {% elif task.status == 'pending' %}
+                                            <span class="badge bg-secondary status-badge">Pending</span>
+                                        {% else %}
+                                            <span class="badge bg-danger status-badge">Overdue</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ task.due_date.strftime('%Y-%m-%d') if task.due_date else 'No due date' }}</td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted py-4">
+                                        <i class="fas fa-inbox fa-2x mb-2"></i>
+                                        <br>No tasks found for this team member
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize charts if data is available
+    {% if daily_report %}
+    initializeDailyChart();
+    {% endif %}
+    
+    {% if weekly_report %}
+    initializeWeeklyChart();
+    {% endif %}
+    
+    {% if monthly_report %}
+    initializeMonthlyChart();
+    {% endif %}
+});
+
+function initializeDailyChart() {
+    const ctx = document.getElementById('dailyActivityChart');
+    if (!ctx) return;
+    
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Active Time', 'Idle Time'],
+            datasets: [{
+                data: [
+                    {{ daily_report.active_time if daily_report else 0 }},
+                    {{ daily_report.idle_time if daily_report else 0 }}
+                ],
+                backgroundColor: ['#28a745', '#dc3545']
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+}
+
+function initializeWeeklyChart() {
+    const ctx = document.getElementById('weeklyActivityChart');
+    if (!ctx) return;
+    
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+            datasets: [{
+                label: 'Productivity Score',
+                data: [85, 78, 92, 88, 95, 82, 90],
+                borderColor: '#007bff',
+                backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100
+                }
+            }
+        }
+    });
+}
+
+function initializeMonthlyChart() {
+    const ctx = document.getElementById('monthlyActivityChart');
+    if (!ctx) return;
+    
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+            datasets: [{
+                label: 'Tasks Completed',
+                data: [12, 15, 18, 14],
+                backgroundColor: '#28a745'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+</script>
+{% endblock %} 

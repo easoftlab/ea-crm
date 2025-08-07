@@ -1,0 +1,918 @@
+{% extends "base.html" %}
+
+{% block title %}Team Member Report - {{ member.get_full_name() }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0 text-info">
+                        <i class="fas fa-user-chart me-2"></i>{{ member.get_full_name() }} - Team Report
+                    </h1>
+                    <p class="text-muted mb-0">Detailed marketing team member report</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{{ url_for('marketing.team_reports') }}" class="btn btn-outline-info">
+                        <i class="fas fa-arrow-left me-1"></i>Back to Reports
+                    </a>
+                    <a href="{{ url_for('marketing.team') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-users me-1"></i>Team Overview
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Date Filter -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+                        <div class="col-md-4">
+                            <label for="date" class="form-label">Report Date</label>
+                            <input type="date" class="form-control" id="date" name="date" 
+                                   value="{{ report_date.isoformat() }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">&nbsp;</label>
+                            <button type="submit" class="btn btn-info d-block w-100">
+                                <i class="fas fa-filter me-1"></i>Apply Filter
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Member Info Card -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-user me-2"></i>Team Member Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="d-flex align-items-center">
+                                <img src="{{ member.get_profile_image_url() }}" 
+                                     class="rounded-circle me-3" 
+                                     width="64" height="64" 
+                                     alt="{{ member.get_full_name() }}">
+                                <div>
+                                    <h5 class="mb-1">{{ member.get_full_name() }}</h5>
+                                    <p class="text-muted mb-0">{{ member.username }}</p>
+                                    <small class="text-muted">{{ member.role.name }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-9">
+                            <div class="row">
+                                {% if member.role.name == 'Lead Generator' %}
+                                <!-- Lead Generator - Only Lead Metrics -->
+                                <div class="col-md-4">
+                                    <div class="text-center">
+                                        <h4 class="text-info mb-1">{{ daily_report.leads_created if daily_report else 0 }}</h4>
+                                        <small class="text-muted">Today's Leads Created</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="text-center">
+                                        <h4 class="text-success mb-1">{{ week_leads_created }}</h4>
+                                        <small class="text-muted">This Week's Leads</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="text-center">
+                                        <h4 class="text-warning mb-1">{{ month_leads_created }}</h4>
+                                        <small class="text-muted">This Month's Leads</small>
+                                    </div>
+                                </div>
+                                {% else %}
+                                <!-- Other Roles - Full Metrics -->
+                                <div class="col-md-3">
+                                    <div class="text-center">
+                                        <h4 class="text-info mb-1">{{ daily_report.leads_created if daily_report else 0 }}</h4>
+                                        <small class="text-muted">Today's Leads</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="text-center">
+                                        <h4 class="text-success mb-1">{{ daily_report.calls_made if daily_report else 0 }}</h4>
+                                        <small class="text-muted">Today's Calls</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="text-center">
+                                        <h4 class="text-warning mb-1">{{ daily_report.goal_achievement if daily_report else 0 }}%</h4>
+                                        <small class="text-muted">Goal Achievement</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="text-center">
+                                        <h4 class="text-primary mb-1">{{ (daily_report.total_active_time / 60) if daily_report else 0 }}h</h4>
+                                        <small class="text-muted">Active Time</small>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Role-Based Simplified View for Lead Generator -->
+    {% if member.role.name == 'Lead Generator' %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="alert alert-success">
+                <i class="fas fa-user-plus me-2"></i>
+                <strong>Lead Generator Dashboard:</strong> Pure lead generation focus - only leads created and lead-related metrics.
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Enhanced Performance Overview -->
+    <div class="row mb-4">
+        {% if member.role.name == 'Lead Generator' %}
+        <!-- Pure Lead Generation View for Lead Generator -->
+        <!-- Today's Performance -->
+        <div class="col-md-4">
+            <div class="card border-primary">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-calendar-day me-2"></i>Today
+                    </h6>
+                </div>
+                <div class="card-body text-center">
+                    <div class="row">
+                        <div class="col-12 mb-2">
+                            <h5 class="text-primary mb-1">{{ today_leads_created }}</h5>
+                            <small class="text-muted">Leads Created Today</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- This Week's Performance -->
+        <div class="col-md-4">
+            <div class="card border-success">
+                <div class="card-header bg-success text-white">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-calendar-week me-2"></i>This Week
+                    </h6>
+                </div>
+                <div class="card-body text-center">
+                    <div class="row">
+                        <div class="col-12 mb-2">
+                            <h5 class="text-success mb-1">{{ week_leads_created }}</h5>
+                            <small class="text-muted">Leads Created This Week</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- This Month's Performance -->
+        <div class="col-md-4">
+            <div class="card border-warning">
+                <div class="card-header bg-warning text-white">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-calendar-alt me-2"></i>This Month
+                    </h6>
+                </div>
+                <div class="card-body text-center">
+                    <div class="row">
+                        <div class="col-12 mb-2">
+                            <h5 class="text-warning mb-1">{{ month_leads_created }}</h5>
+                            <small class="text-muted">Leads Created This Month</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% else %}
+        <!-- Full View for Other Roles -->
+        <!-- Today's Performance -->
+        <div class="col-md-3">
+            <div class="card border-primary">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-calendar-day me-2"></i>Today
+                    </h6>
+                </div>
+                <div class="card-body text-center">
+                    <div class="row">
+                        <div class="col-6 mb-2">
+                            <h5 class="text-primary mb-1">{{ today_leads_created }}</h5>
+                            <small class="text-muted">Leads</small>
+                        </div>
+                        <div class="col-6 mb-2">
+                            <h5 class="text-success mb-1">{{ today_calls }}</h5>
+                            <small class="text-muted">Calls</small>
+                        </div>
+                        <div class="col-6 mb-2">
+                            <h5 class="text-warning mb-1">{{ today_followups }}</h5>
+                            <small class="text-muted">Follow-ups</small>
+                        </div>
+                        <div class="col-6 mb-2">
+                            <h5 class="text-info mb-1">{{ today_converted }}</h5>
+                            <small class="text-muted">Converted</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- This Week's Performance -->
+        <div class="col-md-3">
+            <div class="card border-success">
+                <div class="card-header bg-success text-white">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-calendar-week me-2"></i>This Week
+                    </h6>
+                </div>
+                <div class="card-body text-center">
+                    <div class="row">
+                        <div class="col-6 mb-2">
+                            <h5 class="text-success mb-1">{{ week_leads_created }}</h5>
+                            <small class="text-muted">Leads</small>
+                        </div>
+                        <div class="col-6 mb-2">
+                            <h5 class="text-primary mb-1">{{ week_calls }}</h5>
+                            <small class="text-muted">Calls</small>
+                        </div>
+                        <div class="col-6 mb-2">
+                            <h5 class="text-warning mb-1">{{ week_followups }}</h5>
+                            <small class="text-muted">Follow-ups</small>
+                        </div>
+                        <div class="col-6 mb-2">
+                            <h5 class="text-info mb-1">{{ week_converted }}</h5>
+                            <small class="text-muted">Converted</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- This Month's Performance -->
+        <div class="col-md-3">
+            <div class="card border-warning">
+                <div class="card-header bg-warning text-white">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-calendar-alt me-2"></i>This Month
+                    </h6>
+                </div>
+                <div class="card-body text-center">
+                    <div class="row">
+                        <div class="col-6 mb-2">
+                            <h5 class="text-warning mb-1">{{ month_leads_created }}</h5>
+                            <small class="text-muted">Leads</small>
+                        </div>
+                        <div class="col-6 mb-2">
+                            <h5 class="text-primary mb-1">{{ month_calls }}</h5>
+                            <small class="text-muted">Calls</small>
+                        </div>
+                        <div class="col-6 mb-2">
+                            <h5 class="text-success mb-1">{{ month_followups }}</h5>
+                            <small class="text-muted">Follow-ups</small>
+                        </div>
+                        <div class="col-6 mb-2">
+                            <h5 class="text-info mb-1">{{ month_converted }}</h5>
+                            <small class="text-muted">Converted</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Overall Performance -->
+        <div class="col-md-3">
+            <div class="card border-info">
+                <div class="card-header bg-info text-white">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-chart-line me-2"></i>Overall
+                    </h6>
+                </div>
+                <div class="card-body text-center">
+                    <div class="row">
+                        <div class="col-6 mb-2">
+                            <h5 class="text-info mb-1">{{ total_leads }}</h5>
+                            <small class="text-muted">Total Leads</small>
+                        </div>
+                        <div class="col-6 mb-2">
+                            <h5 class="text-primary mb-1">{{ total_calls }}</h5>
+                            <small class="text-muted">Total Calls</small>
+                        </div>
+                        <div class="col-6 mb-2">
+                            <h5 class="text-success mb-1">{{ existing_clients }}</h5>
+                            <small class="text-muted">Clients</small>
+                        </div>
+                        <div class="col-6 mb-2">
+                            <h5 class="text-warning mb-1">{{ "%.1f"|format(conversion_rate) }}%</h5>
+                            <small class="text-muted">Conversion</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Lead Status Distribution and Recent Activities -->
+    <div class="row mb-4">
+        {% if member.role.name == 'Lead Generator' %}
+        <!-- Pure Lead Generation View for Lead Generator -->
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-pie me-2"></i>Lead Generation Overview
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h6 class="text-muted mb-3">Lead Status Distribution</h6>
+                            {% if lead_status_distribution %}
+                            <div class="row">
+                                {% for status, count in lead_status_distribution.items() %}
+                                <div class="col-md-6 mb-2">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="badge bg-{{ 'success' if status == 'Converted' else 'primary' if status == 'Interested' else 'warning' if status == 'Scheduled for Meeting' else 'info' if status == 'Follow Up' else 'secondary' }}">{{ status }}</span>
+                                        <span class="fw-bold">{{ count }}</span>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <p class="text-muted text-center">No leads found</p>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <h6 class="text-muted mb-3">Lead Generation Stats</h6>
+                            <div class="text-center">
+                                <div class="mb-3">
+                                    <h4 class="text-primary">{{ total_leads }}</h4>
+                                    <small class="text-muted">Total Leads Generated</small>
+                                </div>
+                                <div class="mb-3">
+                                    <h4 class="text-success">{{ today_leads_created }}</h4>
+                                    <small class="text-muted">Today's Leads</small>
+                                </div>
+                                <div class="mb-3">
+                                    <h4 class="text-warning">{{ week_leads_created }}</h4>
+                                    <small class="text-muted">This Week's Leads</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <!-- Full View for Other Roles -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-pie me-2"></i>Lead Status Distribution
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if lead_status_distribution %}
+                    <div class="row">
+                        {% for status, count in lead_status_distribution.items() %}
+                        <div class="col-md-6 mb-2">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="badge bg-{{ 'success' if status == 'Converted' else 'primary' if status == 'Interested' else 'warning' if status == 'Scheduled for Meeting' else 'info' if status == 'Follow Up' else 'secondary' }}">{{ status }}</span>
+                                <span class="fw-bold">{{ count }}</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center">No leads found</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activities -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-history me-2"></i>Recent Activities
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_activities %}
+                    <div class="list-group list-group-flush">
+                        {% for activity in recent_activities[:5] %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <small class="text-muted">{{ activity.created_at.strftime('%H:%M') }}</small>
+                                <div>{{ activity.activity_type }}</div>
+                            </div>
+                            <span class="badge bg-primary">{{ activity.description[:20] if activity.description else 'No description' }}...</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center">No recent activities</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Recent Leads and Calls -->
+    <div class="row mb-4">
+        {% if member.role.name == 'Lead Generator' %}
+        <!-- Pure Lead Generation View - Only Recent Leads -->
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-list me-2"></i>Recent Leads Generated
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_leads %}
+                    <div class="list-group list-group-flush">
+                        {% for lead in recent_leads[:8] %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">{{ lead.company_name }}</h6>
+                                <small class="text-muted">{{ lead.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                                <div class="small text-muted">{{ lead.industry }} • {{ lead.country }} • {{ lead.contact_person }}</div>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-{{ 'success' if lead.status == 'Converted' else 'primary' if lead.status == 'Interested' else 'warning' if lead.status == 'Scheduled for Meeting' else 'info' if lead.status == 'Follow Up' else 'secondary' }}">{{ lead.status }}</span>
+                                <div class="small text-muted mt-1">{{ lead.email }}</div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center">No recent leads generated</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <!-- Full View for Other Roles -->
+        <!-- Recent Leads -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-list me-2"></i>Recent Leads
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_leads %}
+                    <div class="list-group list-group-flush">
+                        {% for lead in recent_leads %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">{{ lead.company_name }}</h6>
+                                <small class="text-muted">{{ lead.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                            </div>
+                            <span class="badge bg-{{ 'success' if lead.status == 'Converted' else 'primary' if lead.status == 'Interested' else 'warning' if lead.status == 'Scheduled for Meeting' else 'info' if lead.status == 'Follow Up' else 'secondary' }}">{{ lead.status }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center">No recent leads</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Calls -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-phone me-2"></i>Recent Calls
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_calls %}
+                    <div class="list-group list-group-flush">
+                        {% for call in recent_calls %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">{{ call.lead.company_name if call.lead else 'Unknown' }}</h6>
+                                <small class="text-muted">{{ call.call_date.strftime('%Y-%m-%d %H:%M') }}</small>
+                            </div>
+                            <span class="badge bg-{{ 'success' if call.status == 'completed' else 'warning' if call.status == 'missed' else 'info' }}">{{ call.status }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center">No recent calls</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Performance Charts -->
+    <div class="row mb-4">
+        {% if member.role.name == 'Lead Generator' %}
+        <!-- Pure Lead Generation Charts for Lead Generator -->
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-line me-2"></i>Lead Generation Trend
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="leadGenerationChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <!-- Full Performance Charts for Other Roles -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-line me-2"></i>Performance Trend
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="performanceChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-pie me-2"></i>Lead Status Distribution
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="statusChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-bolt me-2"></i>Quick Actions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% if member.role.name == 'Lead Generator' %}
+                        <!-- Pure Lead Generation Actions for Lead Generator -->
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('main.add_lead') }}" class="btn btn-outline-primary w-100">
+                                <i class="fas fa-plus me-2"></i>Add New Lead
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('marketing.leads') }}?assigned_to={{ member.id }}" class="btn btn-outline-success w-100">
+                                <i class="fas fa-list me-2"></i>View All Leads
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('marketing.leads') }}?assigned_to={{ member.id }}&status=New" class="btn btn-outline-info w-100">
+                                <i class="fas fa-clock me-2"></i>New Leads
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('marketing.leads') }}?assigned_to={{ member.id }}&status=Interested" class="btn btn-outline-warning w-100">
+                                <i class="fas fa-star me-2"></i>Interested Leads
+                            </a>
+                        </div>
+                        {% else %}
+                        <!-- Full Actions for Other Roles -->
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('marketing.team_member_performance', member_id=member.id) }}" class="btn btn-outline-info w-100">
+                                <i class="fas fa-chart-line me-2"></i>Performance
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('marketing.leads') }}?assigned_to={{ member.id }}" class="btn btn-outline-success w-100">
+                                <i class="fas fa-list me-2"></i>View Leads
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('marketing.calls') }}?user_id={{ member.id }}" class="btn btn-outline-warning w-100">
+                                <i class="fas fa-phone me-2"></i>Call History
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('marketing.team_chat') }}" class="btn btn-outline-primary w-100">
+                                <i class="fas fa-comments me-2"></i>Team Chat
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Admin-Only Features Section -->
+    {% if current_user.has_permission('admin') %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-shield-alt me-2"></i>Admin Controls
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- User Management -->
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-header bg-primary text-white">
+                                    <h6 class="card-title mb-0">
+                                        <i class="fas fa-user-cog me-2"></i>User Management
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="d-grid gap-2">
+                                        <a href="{{ url_for('auth.admin_edit_user', user_id=member.id) }}" class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-edit me-1"></i>Edit User Profile
+                                        </a>
+                                                                                 <a href="{{ url_for('auth.admin_edit_user', user_id=member.id) }}" class="btn btn-outline-warning btn-sm">
+                                             <i class="fas fa-user-tag me-1"></i>Edit User & Role
+                                         </a>
+                                        <button class="btn btn-outline-danger btn-sm" onclick="toggleUserStatus({{ member.id }})">
+                                            <i class="fas fa-power-off me-1"></i>
+                                            <span id="status-text-{{ member.id }}">
+                                                {% if member.is_active %}Deactivate{% else %}Activate{% endif %}
+                                            </span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- System Access -->
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-header bg-success text-white">
+                                    <h6 class="card-title mb-0">
+                                        <i class="fas fa-database me-2"></i>System Access
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="d-grid gap-2">
+                                                                                 <a href="{{ url_for('main.admin_activity_dashboard') }}?user_id={{ member.id }}" class="btn btn-outline-success btn-sm">
+                                             <i class="fas fa-chart-line me-1"></i>Activity Dashboard
+                                         </a>
+                                         <a href="{{ url_for('main.admin_manage_tasks') }}?assigned_to={{ member.id }}" class="btn btn-outline-info btn-sm">
+                                             <i class="fas fa-tasks me-1"></i>Manage Tasks
+                                         </a>
+                                         <a href="{{ url_for('main.user_dashboard', user_id=member.id) }}" class="btn btn-outline-secondary btn-sm">
+                                             <i class="fas fa-tachometer-alt me-1"></i>User Dashboard
+                                         </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Advanced Analytics -->
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-header bg-warning text-dark">
+                                    <h6 class="card-title mb-0">
+                                        <i class="fas fa-chart-bar me-2"></i>Advanced Analytics
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="d-grid gap-2">
+                                                                                 <a href="{{ url_for('main.admin_user_activity', user_id=member.id) }}" class="btn btn-outline-warning btn-sm">
+                                             <i class="fas fa-chart-bar me-1"></i>User Activity
+                                         </a>
+                                         <a href="{{ url_for('auth.admin_users') }}" class="btn btn-outline-info btn-sm">
+                                             <i class="fas fa-users me-1"></i>All Users
+                                         </a>
+                                         <a href="{{ url_for('auth.admin_roles') }}" class="btn btn-outline-dark btn-sm">
+                                             <i class="fas fa-user-tag me-1"></i>Role Management
+                                         </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Admin Quick Stats -->
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header bg-dark text-white">
+                                    <h6 class="card-title mb-0">
+                                        <i class="fas fa-info-circle me-2"></i>Admin Quick Stats
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-3 text-center">
+                                            <h5 class="text-primary">{{ member.login_count or 0 }}</h5>
+                                            <small class="text-muted">Total Logins</small>
+                                        </div>
+                                        <div class="col-md-3 text-center">
+                                            <h5 class="text-success">{{ member.last_login.strftime('%Y-%m-%d') if member.last_login else 'Never' }}</h5>
+                                            <small class="text-muted">Last Login</small>
+                                        </div>
+                                        <div class="col-md-3 text-center">
+                                            <h5 class="text-warning">{{ member.created_at.strftime('%Y-%m-%d') if member.created_at else 'Unknown' }}</h5>
+                                            <small class="text-muted">Account Created</small>
+                                        </div>
+                                        <div class="col-md-3 text-center">
+                                            <h5 class="text-info">{{ 'Active' if member.is_active else 'Inactive' }}</h5>
+                                            <small class="text-muted">Account Status</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Chart.js for charts -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+ <!-- JavaScript for charts -->
+ <script>
+ document.addEventListener('DOMContentLoaded', function() {
+     {% if member.role.name == 'Lead Generator' %}
+     // Lead Generation Trend Chart for Lead Generator
+     const leadGenerationCtx = document.getElementById('leadGenerationChart').getContext('2d');
+     new Chart(leadGenerationCtx, {
+         type: 'line',
+         data: {
+             labels: ['Today', 'This Week', 'This Month'],
+             datasets: [{
+                 label: 'Leads Created',
+                 data: [{{ today_leads_created }}, {{ week_leads_created }}, {{ month_leads_created }}],
+                 borderColor: '#17a2b8',
+                 backgroundColor: 'rgba(23, 162, 184, 0.1)',
+                 tension: 0.4,
+                 fill: true
+             }]
+         },
+         options: {
+             responsive: true,
+             scales: {
+                 y: {
+                     beginAtZero: true
+                 }
+             },
+             plugins: {
+                 legend: {
+                     position: 'top'
+                 }
+             }
+         }
+     });
+     {% else %}
+     // Performance Trend Chart for Other Roles
+     const performanceCtx = document.getElementById('performanceChart').getContext('2d');
+     new Chart(performanceCtx, {
+         type: 'line',
+         data: {
+             labels: ['Today', 'This Week', 'This Month'],
+             datasets: [{
+                 label: 'Leads Created',
+                 data: [{{ today_leads_created }}, {{ week_leads_created }}, {{ month_leads_created }}],
+                 borderColor: '#17a2b8',
+                 backgroundColor: 'rgba(23, 162, 184, 0.1)',
+                 tension: 0.4,
+                 fill: true
+             }, {
+                 label: 'Calls Made',
+                 data: [{{ today_calls }}, {{ week_calls }}, {{ month_calls }}],
+                 borderColor: '#28a745',
+                 backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                 tension: 0.4,
+                 fill: true
+             }, {
+                 label: 'Follow-ups',
+                 data: [{{ today_followups }}, {{ week_followups }}, {{ month_followups }}],
+                 borderColor: '#ffc107',
+                 backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                 tension: 0.4,
+                 fill: true
+             }]
+         },
+         options: {
+             responsive: true,
+             scales: {
+                 y: {
+                     beginAtZero: true
+                 }
+             },
+             plugins: {
+                 legend: {
+                     position: 'top'
+                 }
+             }
+         }
+     });
+     {% endif %}
+    
+    // Lead Status Distribution Chart
+    const statusCtx = document.getElementById('statusChart').getContext('2d');
+    const statusData = {
+        labels: [{% for status, count in lead_status_distribution.items() %}'{{ status }}'{% if not loop.last %}, {% endif %}{% endfor %}],
+        datasets: [{
+            data: [{% for status, count in lead_status_distribution.items() %}{{ count }}{% if not loop.last %}, {% endif %}{% endfor %}],
+            backgroundColor: [
+                '#28a745', // Converted - Green
+                '#007bff', // Interested - Blue
+                '#ffc107', // Scheduled - Yellow
+                '#17a2b8', // Follow Up - Cyan
+                '#6c757d'  // Others - Gray
+            ],
+            borderWidth: 2
+        }]
+    };
+    
+    new Chart(statusCtx, {
+        type: 'doughnut',
+        data: statusData,
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+    
+    // Admin-only JavaScript functions
+    {% if current_user.has_permission('admin') %}
+    
+    // Toggle user status (activate/deactivate)
+    function toggleUserStatus(userId) {
+        if (confirm('Are you sure you want to change this user\'s status?')) {
+            fetch(`/auth/admin/toggle_user_status/${userId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const statusText = document.getElementById(`status-text-${userId}`);
+                    statusText.textContent = data.is_active ? 'Deactivate' : 'Activate';
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while updating user status.');
+            });
+        }
+    }
+    
+
+    
+    {% endif %}
+});
+</script>
+{% endblock %} 

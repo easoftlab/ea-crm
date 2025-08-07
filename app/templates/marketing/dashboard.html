@@ -1,0 +1,364 @@
+{% extends "base.html" %}
+
+{% block title %}Marketing Manager Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0 text-primary">
+                        <i class="fas fa-chart-line me-2"></i>Marketing Manager Dashboard
+                    </h1>
+                    <p class="text-muted mb-0">Team Performance Overview</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{{ url_for('marketing.team') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-users me-1"></i>Team Management
+                    </a>
+                    <a href="{{ url_for('marketing.reports') }}" class="btn btn-outline-info">
+                        <i class="fas fa-chart-bar me-1"></i>Reports
+                    </a>
+                    <a href="{{ url_for('marketing.team_chat') }}" class="btn btn-outline-success">
+                        <i class="fas fa-comments me-1"></i>Team Chat
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="row mb-4">
+        <div class="col-md-2">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">{{ stats.today.leads }}</h4>
+                            <p class="mb-0">Leads Today</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-user-plus fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">{{ stats.today.calls }}</h4>
+                            <p class="mb-0">Calls Today</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-phone fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">{{ stats.today.followup_calls }}</h4>
+                            <p class="mb-0">Follow-up Calls</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-phone-volume fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">{{ stats.today.tasks }}</h4>
+                            <p class="mb-0">Tasks Completed</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-tasks fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-secondary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">{{ (stats.today.active_time / 60) | round(1) }}</h4>
+                            <p class="mb-0">Active Hours</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-clock fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Team Performance -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-trophy me-2"></i>Team Performance Today
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Rank</th>
+                                    <th>Team Member</th>
+                                    <th>Leads Created</th>
+                                    <th>Calls Made</th>
+                                    <th>Follow-up Calls</th>
+                                    <th>Tasks Completed</th>
+                                    <th>Productivity Score</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for performance in team_performance %}
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-primary">{{ loop.index }}</span>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <img src="{{ performance.user.get_profile_image_url() }}" 
+                                                 class="rounded-circle me-2" 
+                                                 width="32" height="32" 
+                                                 alt="{{ performance.user.get_full_name() }}">
+                                            <div>
+                                                <a href="{{ url_for('marketing.team_member_report', member_id=performance.user.id) }}" class="text-decoration-none">
+                                                    <div class="fw-bold text-primary">{{ performance.user.get_full_name() }}</div>
+                                                </a>
+                                                <small class="text-muted">{{ performance.user.username }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-success">{{ performance.daily_leads }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">{{ performance.daily_calls }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary">{{ performance.daily_followup_calls }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-warning">{{ performance.tasks_completed if performance.tasks_completed else 0 }}</span>
+                                    </td>
+                                    <td>
+                                        <div class="progress" style="height: 20px;">
+                                            <div class="progress-bar bg-success" 
+                                                 style="width: {{ performance.productivity_score }}%">
+                                                {{ performance.productivity_score | round(1) }}%
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('marketing.team_member_report', member_id=performance.user.id) }}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-chart-line me-1"></i>View Report
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Weekly and Monthly Stats -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-calendar-week me-2"></i>This Week's Performance
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-3">
+                            <h3 class="text-primary">{{ stats.week.leads }}</h3>
+                            <p class="text-muted mb-0">Leads Created</p>
+                        </div>
+                        <div class="col-3">
+                            <h3 class="text-success">{{ stats.week.calls }}</h3>
+                            <p class="text-muted mb-0">Calls Made</p>
+                        </div>
+                        <div class="col-3">
+                            <h3 class="text-info">{{ stats.week.followup_calls }}</h3>
+                            <p class="text-muted mb-0">Follow-up Calls</p>
+                        </div>
+                        <div class="col-3">
+                            <h3 class="text-warning">{{ stats.week.tasks }}</h3>
+                            <p class="text-muted mb-0">Tasks Completed</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-calendar-alt me-2"></i>This Month's Performance
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-3">
+                            <h3 class="text-primary">{{ stats.month.leads }}</h3>
+                            <p class="text-muted mb-0">Leads Created</p>
+                        </div>
+                        <div class="col-3">
+                            <h3 class="text-success">{{ stats.month.calls }}</h3>
+                            <p class="text-muted mb-0">Calls Made</p>
+                        </div>
+                        <div class="col-3">
+                            <h3 class="text-info">{{ stats.month.followup_calls }}</h3>
+                            <p class="text-muted mb-0">Follow-up Calls</p>
+                        </div>
+                        <div class="col-3">
+                            <h3 class="text-warning">{{ stats.month.tasks }}</h3>
+                            <p class="text-muted mb-0">Tasks Completed</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Leads -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-list me-2"></i>Recent Leads
+                    </h5>
+                    <a href="{{ url_for('marketing.leads') }}" class="btn btn-sm btn-outline-primary">
+                        View All Leads
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Company</th>
+                                    <th>Country</th>
+                                    <th>Industry</th>
+                                    <th>Status</th>
+                                    <th>Created By</th>
+                                    <th>Created</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for lead in recent_leads %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ lead.company_name }}</strong>
+                                        {% if lead.company_website %}
+                                        <br><small class="text-muted">{{ lead.company_website }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ lead.country }}</td>
+                                    <td>{{ lead.industry }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if lead.status == 'Converted' else 'warning' if lead.status == 'Follow Up' else 'primary' }}">
+                                            {{ lead.status }}
+                                        </span>
+                                    </td>
+                                    <td>{{ lead.creator.get_full_name() if lead.creator else 'Unknown' }}</td>
+                                    <td>{{ lead.created_at.strftime('%Y-%m-%d') }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-bolt me-2"></i>Quick Actions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('marketing.team_reports_daily') }}" class="btn btn-outline-primary w-100">
+                                <i class="fas fa-calendar-day me-2"></i>Daily Reports
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('marketing.team_reports_weekly') }}" class="btn btn-outline-success w-100">
+                                <i class="fas fa-calendar-week me-2"></i>Weekly Reports
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('marketing.team_reports_monthly') }}" class="btn btn-outline-info w-100">
+                                <i class="fas fa-calendar-alt me-2"></i>Monthly Reports
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('marketing.projections') }}" class="btn btn-outline-warning w-100">
+                                <i class="fas fa-chart-line me-2"></i>Projections
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript for real-time updates -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-refresh dashboard every 5 minutes
+    setInterval(function() {
+        location.reload();
+    }, 5 * 60 * 1000);
+    
+    // Add click handlers for team member reports
+    document.querySelectorAll('.btn-outline-primary').forEach(function(btn) {
+        if (btn.textContent.includes('View Report')) {
+            btn.addEventListener('click', function(e) {
+                // Add loading state
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Loading...';
+                btn.disabled = true;
+            });
+        }
+    });
+});
+</script>
+{% endblock %} 

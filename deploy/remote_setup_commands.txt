@@ -1,0 +1,35 @@
+# EA CRM Remote Setup Commands
+# Copy and paste these commands one by one on your server
+
+# 1. Navigate to CRM directory
+cd crm
+
+# 2. Check if files are present
+ls -la
+
+# 3. Set file permissions
+find . -type d -exec chmod 755 {} \;
+find . -type f -exec chmod 644 {} \;
+chmod 755 instance/ 2>/dev/null || mkdir -p instance
+chmod 755 app/static/uploads/ 2>/dev/null || mkdir -p app/static/uploads
+
+# 4. Create necessary directories
+mkdir -p instance
+mkdir -p app/static/uploads/profiles
+mkdir -p logs
+
+# 5. Install Python dependencies
+python3 -m pip install -r requirements.txt
+
+# 6. Create environment file
+cat > .env << EOF
+SECRET_KEY=$(python3 -c "import secrets; print(secrets.token_hex(32))")
+FLASK_ENV=production
+FLASK_APP=wsgi.py
+EOF
+
+# 7. Test the application
+python3 wsgi.py
+
+# 8. Check if everything is working
+echo "Setup completed! Check the output above for any errors." 

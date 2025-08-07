@@ -1,0 +1,497 @@
+{% extends 'base.html' %}
+
+{% block title %}Production Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4">
+                <i class="fas fa-industry"></i> Production Dashboard
+            </h1>
+            <p class="text-muted">Welcome, {{ current_user.get_full_name() }}! Here's your comprehensive production overview.</p>
+        </div>
+    </div>
+
+    <!-- Real-Time Activity Monitor -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-primary">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-eye"></i> Real-Time Activity Monitor
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <div class="activity-indicator active" id="activity-status">
+                                    <i class="fas fa-circle text-success"></i>
+                                    <span class="ms-2">Active</span>
+                                </div>
+                                <small class="text-muted">Current Status</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <h4 id="current-app">-</h4>
+                                <small class="text-muted">Active Application</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <h4 id="session-time">-</h4>
+                                <small class="text-muted">Today's Session</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <h4 id="productivity-score">-</h4>
+                                <small class="text-muted">Productivity Score</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Desktop Activity Log (ActivityWatch Integration) -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-info">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-desktop"></i> Desktop Activity Log (ActivityWatch)
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if today_desktop_activities and today_desktop_activities|length > 0 %}
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered table-striped mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>App</th>
+                                    <th>Title</th>
+                                    <th>Duration (s)</th>
+                                    <th>Type</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for act in today_desktop_activities %}
+                                <tr>
+                                    <td>{{ act.timestamp.strftime('%H:%M:%S') }}</td>
+                                    <td>{{ act.app }}</td>
+                                    <td>{{ act.title }}</td>
+                                    <td>{{ act.duration or '-' }}</td>
+                                    <td>{{ act.activity_type or '-' }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-muted">No desktop activity recorded for today.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Task Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h3 id="tasks-total">-</h3>
+                    <p class="mb-0">Total Tasks</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body text-center">
+                    <h3 id="tasks-pending">-</h3>
+                    <p class="mb-0">Pending</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h3 id="tasks-in-progress">-</h3>
+                    <p class="mb-0">In Progress</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h3 id="tasks-completed">-</h3>
+                    <p class="mb-0">Completed</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Productivity Analytics -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-line"></i> Today's Productivity Analytics
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <div class="activity-indicator active">
+                                    <i class="fas fa-clock text-success"></i>
+                                </div>
+                                <h4 id="active-time">-</h4>
+                                <small class="text-muted">Active Time</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <div class="activity-indicator">
+                                    <i class="fas fa-mouse text-primary"></i>
+                                </div>
+                                <h4 id="mouse-activity">-</h4>
+                                <small class="text-muted">Mouse Activity</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <div class="activity-indicator">
+                                    <i class="fas fa-keyboard text-warning"></i>
+                                </div>
+                                <h4 id="keyboard-activity">-</h4>
+                                <small class="text-muted">Keyboard Activity</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <div class="activity-indicator">
+                                    <i class="fas fa-tasks text-info"></i>
+                                </div>
+                                <h4 id="tasks-completed-analytics">-</h4>
+                                <small class="text-muted">Tasks Completed</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-tools"></i> Application Usage
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="app-usage-chart">
+                        <!-- Will be filled by JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Website Activity Tracking -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-globe"></i> Website Activity
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="website-activity">
+                        <!-- Will be filled by JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-clock"></i> Time Distribution
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="time-distribution">
+                        <!-- Will be filled by JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Performance Insights & Weekly Progress -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-lightbulb"></i> Performance Insights & Improvement Areas
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="performance-insights">
+                        <!-- Will be filled by JS or backend if needed -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-pie"></i> Weekly Progress
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center">
+                        <div class="progress-circle" style="width: 120px; height: 120px; margin: 0 auto;">
+                            <div class="progress-circle-inner" id="weekly-progress-circle" style="width: 100%; height: 100%; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                <div style="background: white; width: 80%; height: 80%; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                    <span id="weekly-progress-value" style="font-size: 1.5rem; font-weight: bold; color: #007bff;">-</span>
+                                </div>
+                            </div>
+                        </div>
+                        <h6 class="mt-3">Weekly Goal</h6>
+                        <p class="text-muted mb-0">Target: <span id="weekly-target">-</span> tasks/week</p>
+                        <p class="text-muted">Completed: <span id="weekly-completed">-</span> tasks</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Tasks and Quick Actions -->
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-tasks"></i> Recent Tasks
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Task</th>
+                                    <th>Status</th>
+                                    <th>Priority</th>
+                                    <th>Client ID</th>
+                                    <th>Due Date</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recent-tasks-body">
+                                <!-- Will be filled by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-bolt"></i> Quick Actions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('production.upload_files') }}" class="btn btn-outline-primary">
+                            📁 Upload Files
+                        </a>
+                        <a href="{{ url_for('production.lan_server') }}" class="btn btn-outline-info">
+                            🌐 Access LAN Server
+                        </a>
+                        <a href="{{ url_for('production.tasks') }}" class="btn btn-outline-secondary">
+                            📋 All Tasks
+                        </a>
+                        <button class="btn btn-outline-success" onclick="startScreenRecording()">
+                            🎥 Start Screen Recording
+                        </button>
+                        <button class="btn btn-outline-warning" onclick="generateProductivityReport()">
+                            📊 Generate Report
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Screen Recording Modal -->
+<div class="modal fade" id="screenRecordingModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Screen Recording</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center">
+                    <div class="recording-status mb-3">
+                        <i class="fas fa-circle text-danger" id="recording-indicator"></i>
+                        <span id="recording-text">Recording in progress...</span>
+                    </div>
+                    <div class="recording-timer">
+                        <h3 id="recording-time">00:00:00</h3>
+                    </div>
+                    <div class="mt-3">
+                        <button class="btn btn-danger" onclick="stopScreenRecording()">
+                            <i class="fas fa-stop"></i> Stop Recording
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.activity-indicator {
+    display: inline-flex;
+    align-items: center;
+    padding: 8px 16px;
+    border-radius: 20px;
+    background: rgba(40, 167, 69, 0.1);
+    border: 1px solid #28a745;
+}
+
+.activity-indicator.active {
+    background: rgba(40, 167, 69, 0.1);
+    border-color: #28a745;
+}
+
+.activity-indicator.inactive {
+    background: rgba(220, 53, 69, 0.1);
+    border-color: #dc3545;
+}
+
+.progress-circle {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: conic-gradient(#007bff 0deg 280deg, #e9ecef 280deg 360deg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+}
+
+.progress-circle-inner {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.app-usage-item {
+    margin-bottom: 15px;
+}
+
+.recording-status {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.recording-timer {
+    font-family: monospace;
+    font-size: 24px;
+    font-weight: bold;
+}
+</style>
+
+<script>
+function updateDashboardUI(data) {
+    // Real-Time Activity Monitor
+    document.getElementById('current-app').textContent = data.today_app_usage.length > 0 ? data.today_app_usage[0].application_name : 'No Active App';
+    document.getElementById('session-time').textContent = (data.total_active_time ? (data.total_active_time / 3600).toFixed(1) : 0) + 'h';
+    document.getElementById('productivity-score').textContent = (data.productivity_score ? data.productivity_score.toFixed(1) : 0) + '%';
+
+    // Task Summary
+    document.getElementById('tasks-total').textContent = data.task_stats.total;
+    document.getElementById('tasks-pending').textContent = data.task_stats.pending;
+    document.getElementById('tasks-in-progress').textContent = data.task_stats.in_progress;
+    document.getElementById('tasks-completed').textContent = data.task_stats.completed;
+
+    // Productivity Analytics
+    document.getElementById('active-time').textContent = (data.total_active_time ? (data.total_active_time / 3600).toFixed(1) : 0) + 'h';
+    document.getElementById('mouse-activity').textContent = data.today_activity ? data.today_activity.mouse_clicks : 0;
+    document.getElementById('keyboard-activity').textContent = data.today_activity ? data.today_activity.keyboard_strokes : 0;
+    document.getElementById('tasks-completed-analytics').textContent = data.task_stats.completed;
+
+    // Application Usage
+    let appUsageHtml = '';
+    for (const [app, percent] of Object.entries(data.adobe_usage)) {
+        appUsageHtml += `<div class="app-usage-item"><div class="d-flex justify-content-between align-items-center mb-2"><span>${app}</span><span class="badge bg-primary">${percent}%</span></div><div class="progress mb-3"><div class="progress-bar bg-primary" style="width: ${percent}%"></div></div></div>`;
+    }
+    document.getElementById('app-usage-chart').innerHTML = appUsageHtml;
+
+    // Website Activity
+    let websiteHtml = '';
+    for (const [site, dataObj] of Object.entries(data.reference_sites)) {
+        websiteHtml += `<div class="d-flex justify-content-between"><span>${site}</span><span>${dataObj.visits} visits</span></div>`;
+    }
+    for (const [site, dataObj] of Object.entries(data.social_media)) {
+        websiteHtml += `<div class="d-flex justify-content-between"><span>${site}</span><span>${dataObj.visits} visits</span></div>`;
+    }
+    document.getElementById('website-activity').innerHTML = websiteHtml;
+
+    // Time Distribution
+    let timeDistHtml = '';
+    timeDistHtml += `<div class="d-flex justify-content-between"><span>Work Applications</span><span>${(data.work_apps_time / 3600).toFixed(1)}h</span></div>`;
+    timeDistHtml += `<div class="d-flex justify-content-between"><span>Web Activity</span><span>${(data.web_activity_time / 3600).toFixed(1)}h</span></div>`;
+    timeDistHtml += `<div class="d-flex justify-content-between"><span>Communication</span><span>${(data.communication_time / 3600).toFixed(1)}h</span></div>`;
+    timeDistHtml += `<div class="d-flex justify-content-between"><span>File Management</span><span>${(data.file_management_time / 3600).toFixed(1)}h</span></div>`;
+    document.getElementById('time-distribution').innerHTML = timeDistHtml;
+
+    // Weekly Progress
+    document.getElementById('weekly-progress-value').textContent = Math.round(data.weekly_progress) + '%';
+    document.getElementById('weekly-target').textContent = data.weekly_target;
+    document.getElementById('weekly-completed').textContent = data.weekly_completed;
+    document.getElementById('weekly-progress-circle').style.background = `conic-gradient(#007bff ${data.weekly_progress}%, #e9ecef 0%)`;
+
+    // Recent Tasks
+    let tasksHtml = '';
+    for (const task of data.assigned_tasks.slice(0, 5)) {
+        tasksHtml += `<tr><td>${task.title}</td><td><span class="badge bg-secondary">${task.status}</span></td><td><span class="badge bg-secondary">${task.priority}</span></td><td>${task.client_id || 'No Client ID'}</td><td>${task.due_date || 'No due date'}</td><td><a href="/production/tasks/${task.id}" class="btn btn-sm btn-outline-primary">View</a></td></tr>`;
+    }
+    document.getElementById('recent-tasks-body').innerHTML = tasksHtml;
+}
+
+function fetchDashboardData() {
+    fetch('/production/api/dashboard_data')
+        .then(response => response.json())
+        .then(data => {
+            updateDashboardUI(data);
+        });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    fetchDashboardData();
+    setInterval(fetchDashboardData, 5000); // Poll every 5 seconds
+});
+</script>
+{% endblock %} 

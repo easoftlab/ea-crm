@@ -1,0 +1,1281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    {% if current_user.is_authenticated %}
+    <meta name="user-id" content="{{ current_user.id }}">
+    <meta name="user-name" content="{{ current_user.get_full_name() }}">
+    {% endif %}
+    <title>{% block title %}{% endblock %} - EA CRM</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <meta name="theme-color" content="#007bff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="EA CRM">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/icon-152x152.png') }}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/enhanced-chat.css', v='1.7') }}" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="{{ url_for('static', filename='js/pwa-install.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/notification-manager.js') }}"></script>
+    <audio id="notification-sound" preload="auto">
+        <source src="{{ url_for('static', filename='sounds/notification.wav') }}" type="audio/wav">
+    </audio>
+    <audio id="message-sound" preload="auto">
+        <source src="{{ url_for('static', filename='sounds/message.wav') }}" type="audio/wav">
+    </audio>
+    <audio id="mention-sound" preload="auto">
+        <source src="{{ url_for('static', filename='sounds/mention.wav') }}" type="audio/wav">
+    </audio>
+    <style>
+        .navbar-brand {
+            font-weight: bold;
+            font-size: 1.5rem;
+        }
+        .user-menu {
+            min-width: 200px;
+        }
+        .timezone-display {
+            font-size: 0.8rem;
+        }
+        
+        /* Compact Timezone Display Styles */
+        .compact-timezone-container {
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 6px 12px;
+            margin: 0 10px;
+            border: 1px solid #dc3545;
+            min-width: 200px;
+        }
+        
+        .timezone-icon {
+            font-size: 1rem;
+            margin-right: 8px;
+            color: #6c757d;
+        }
+        
+        .timezone-icon.clickable {
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 50%;
+        }
+        
+        .compact-timezone-display {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .compact-timezone-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 4px 8px;
+            background: transparent;
+            border-radius: 4px;
+            min-width: 50px;
+        }
+        
+        .compact-label {
+            font-size: 0.7rem;
+            font-weight: bold;
+            color: #6c757d;
+            margin-bottom: 2px;
+        }
+        
+        .compact-time {
+            font-size: 0.8rem;
+            color: #495057;
+            font-weight: 500;
+        }
+        
+        .compact-separator {
+            color: #adb5bd;
+            font-size: 0.8rem;
+        }
+        
+        /* Message Action Buttons */
+        .message-action-btn {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            background: none;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 12px;
+            color: #666;
+            transition: all 0.2s ease;
+        }
+        
+        .message-action-btn:hover {
+            background: #f8f9fa;
+            color: #333;
+            transform: scale(1.1);
+        }
+        
+        .message-action-btn.danger:hover {
+            background: #dc3545;
+            color: white;
+        }
+        
+        /* Message Edit Mode */
+        .message-edit-mode {
+            background: #f8f9fa !important;
+            border: 2px solid #667eea !important;
+        }
+        
+        .message-edit-input {
+            width: 100%;
+            border: none;
+            background: transparent;
+            font-size: 14px;
+            line-height: 1.4;
+            resize: none;
+            outline: none;
+            font-family: inherit;
+        }
+        
+        .message-edit-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        
+        .message-edit-btn {
+            padding: 4px 8px;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .message-edit-save {
+            background: #28a745;
+            color: white;
+        }
+        
+        .message-edit-save:hover {
+            background: #218838;
+        }
+        
+        .message-edit-cancel {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .message-edit-cancel:hover {
+            background: #5a6268;
+        }
+            font-weight: bold;
+        }
+        
+        .compact-timezone-toggle {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            color: #6c757d;
+            margin-left: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+        }
+        
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .timezone-detail {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .timezone-detail:last-child {
+            border-bottom: none;
+        }
+        
+        .timezone-detail-label {
+            font-weight: 600;
+            color: white;
+        }
+        
+        .timezone-detail-time {
+            font-weight: 700;
+            color: #fff;
+            background: rgba(255,255,255,0.2);
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .timezone-container {
+                margin: 5px 0;
+                padding: 6px 10px;
+            }
+            
+            .timezone-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 4px;
+            }
+            
+            .timezone-item {
+                font-size: 0.7rem;
+                padding: 3px 6px;
+            }
+        }
+        .dark-mode {
+            background-color: #1a1a1a !important;
+            color: #ffffff !important;
+        }
+        .dark-mode .navbar {
+            background-color: #2d2d2d !important;
+        }
+        .dark-mode .card {
+            background-color: #2d2d2d !important;
+            border-color: #404040 !important;
+        }
+        .dark-mode .table {
+            color: #ffffff !important;
+        }
+        .dark-mode .form-control {
+            background-color: #404040 !important;
+            border-color: #555555 !important;
+            color: #ffffff !important;
+        }
+
+        /* Floating Message Box */
+        .floating-message-box {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            transition: all 0.3s ease;
+            display: block !important;
+        }
+
+        .floating-message-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+            z-index: 1001;
+        }
+
+        .floating-message-icon:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+
+        .floating-message-icon.has-notifications::after {
+            content: '';
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            width: 20px;
+            height: 20px;
+            background: #ff4757;
+            border-radius: 50%;
+            border: 3px solid white;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        /* Message Box Modal */
+        .message-box-modal {
+            display: none;
+            position: fixed;
+            bottom: 90px;
+            right: 20px;
+            width: 350px;
+            height: 500px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            z-index: 1001;
+            overflow: hidden;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .message-box-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .message-box-header h5 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .message-box-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .message-box-maximize,
+        .message-box-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .message-box-maximize:hover,
+        .message-box-close:hover {
+            background: rgba(255,255,255,0.2);
+            transform: scale(1.1);
+        }
+
+        .message-box-action-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+            margin-right: 5px;
+        }
+
+        .message-box-action-btn:hover {
+            background: rgba(255,255,255,0.2);
+            transform: scale(1.1);
+        }
+
+        .message-box-content {
+            height: 400px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message-box-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+            background: #f8f9fa;
+        }
+
+        .message-box-input {
+            padding: 15px;
+            border-top: 1px solid #e9ecef;
+            background: white;
+        }
+
+        .message-box-input input {
+            width: 100%;
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 25px;
+            outline: none;
+            font-size: 14px;
+        }
+
+        .message-box-input input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+        }
+
+        /* Facebook-style Notifications */
+        .navbar-notifications {
+            position: relative;
+            margin-right: 15px;
+        }
+
+        .notifications-icon {
+            position: relative;
+            background: none;
+            border: none;
+            color: #666;
+            font-size: 18px;
+            padding: 8px;
+            cursor: pointer;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .notifications-icon:hover {
+            background: #f8f9fa;
+            color: #333;
+        }
+
+        .notifications-badge {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: #ff4757;
+            color: white;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            animation: pulse 2s infinite;
+        }
+
+        .notifications-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            width: 350px;
+            max-height: 400px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+            z-index: 1000;
+            display: none;
+            overflow: hidden;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from { transform: translateY(-10px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .notifications-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .notifications-header h6 {
+            margin: 0;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .mark-all-read {
+            background: none;
+            border: none;
+            color: #667eea;
+            font-size: 12px;
+            cursor: pointer;
+            padding: 0;
+        }
+
+        .notifications-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .notification-item {
+            padding: 15px 20px;
+            border-bottom: 1px solid #f8f9fa;
+            cursor: pointer;
+            transition: background 0.3s ease;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .notification-item:hover {
+            background: #f8f9fa;
+        }
+
+        .notification-item.unread {
+            background: #f0f8ff;
+        }
+
+        .notification-item.unread:hover {
+            background: #e6f3ff;
+        }
+
+        .notification-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .notification-content {
+            flex: 1;
+        }
+
+        .notification-title {
+            font-weight: 600;
+            font-size: 14px;
+            color: #333;
+            margin-bottom: 4px;
+            line-height: 1.3;
+        }
+
+        .notification-message {
+            font-size: 13px;
+            color: #666;
+            line-height: 1.4;
+            margin-bottom: 4px;
+        }
+
+        .notification-time {
+            font-size: 11px;
+            color: #999;
+        }
+
+        .notification-dot {
+            width: 8px;
+            height: 8px;
+            background: #667eea;
+            border-radius: 50%;
+            margin-top: 5px;
+            flex-shrink: 0;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .floating-message-box {
+                bottom: 15px;
+                right: 15px;
+            }
+            
+            .floating-message-icon {
+                width: 50px;
+                height: 50px;
+                font-size: 20px;
+            }
+            
+            .message-box-modal {
+                width: 300px;
+                height: 400px;
+                right: 15px;
+                bottom: 75px;
+            }
+            
+            .notifications-dropdown {
+                width: 300px;
+                right: -50px;
+            }
+        }
+        
+        /* Message Highlighting for Mentions */
+        .message-highlighted {
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%) !important;
+            border-left: 4px solid #ffc107 !important;
+            box-shadow: 0 2px 8px rgba(255, 193, 7, 0.2) !important;
+            animation: highlightPulse 2s ease-in-out;
+        }
+        
+        .message-highlighted .message-content {
+            color: #856404 !important;
+        }
+        
+        .message-highlighted .message-sender {
+            color: #856404 !important;
+            font-weight: 600;
+        }
+        
+        @keyframes highlightPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+        
+        /* Mention Badge */
+        .mention-badge {
+            display: inline-block;
+            background: #ffc107;
+            color: #856404;
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 10px;
+            margin-left: 8px;
+            font-weight: 600;
+            animation: badgePulse 1.5s ease-in-out infinite;
+        }
+        
+        @keyframes badgePulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        /* Dark mode support for highlighted messages */
+        .dark-mode .message-highlighted {
+            background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%) !important;
+            border-left-color: #f6ad55 !important;
+        }
+        
+        .dark-mode .message-highlighted .message-content {
+            color: #f7fafc !important;
+        }
+        
+        .dark-mode .message-highlighted .message-sender {
+            color: #f7fafc !important;
+        }
+        
+        .dark-mode .mention-badge {
+            background: #f6ad55;
+            color: #2d3748;
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    {% if current_user.is_authenticated %}
+    <!-- Navigation for authenticated users -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{{ url_for('main.dashboard') }}">
+                🏢 EA CRM
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <!-- Add Lead - Available to all users except Production -->
+                    {% if not current_user.is_authenticated or not current_user.has_permission('view_tasks') %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('main.add_lead') }}">
+                            <i class="fas fa-plus"></i> Add Lead
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    <!-- Dashboard Navigation -->
+                    {% if current_user.has_permission('admin') %}
+                        <!-- Admin users see Main Dashboard directly -->
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('main.dashboard') }}">
+                                <i class="fas fa-tachometer-alt"></i> Main Dashboard
+                            </a>
+                        </li>
+                    {% else %}
+                        <!-- Production role users see Productions Dashboard -->
+                        {% if current_user.role and current_user.role.name in ['Production', 'Productions Manager'] %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('productions.dashboard') }}">
+                                <i class="fas fa-industry"></i> Productions Dashboard
+                            </a>
+                        </li>
+                        {% else %}
+                        <!-- All other non-admin users see My Dashboard for personalized content -->
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('main.personal_dashboard') }}">
+                                <i class="fas fa-user-circle"></i> My Dashboard
+                            </a>
+                        </li>
+                        {% endif %}
+                        
+                        <!-- Main Dashboard - Only for users with manage_leads permission (non-admin) -->
+                        {% if current_user.has_permission('manage_leads') %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('main.dashboard') }}">
+                                <i class="fas fa-tachometer-alt"></i> Main Dashboard
+                            </a>
+                        </li>
+                        {% endif %}
+                    {% endif %}
+                    
+                    <!-- Reports - Only for users with view_reports permission, excluding Callers -->
+                    {% if current_user.has_permission('view_reports') and current_user.role.name != 'Caller' %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('main.reports') }}">
+                            <i class="fas fa-chart-bar"></i> Reports
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    <!-- Converted Clients - Different views for different users -->
+                    {% if current_user.has_permission('admin') %}
+                    <!-- Admin sees global converted clients -->
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('main.converted_clients') }}">
+                            <i class="fas fa-trophy"></i> Converted Clients
+                        </a>
+                    </li>
+                    {% elif current_user.role.name == 'Caller' %}
+                    <!-- Callers see their personal converted clients -->
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('main.personal_converted_clients') }}">
+                            <i class="fas fa-trophy"></i> My Converted Clients
+                        </a>
+                    </li>
+                    {% elif current_user.has_permission('manage_leads') %}
+                    <!-- Other users with manage_leads see global converted clients -->
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('main.converted_clients') }}">
+                            <i class="fas fa-trophy"></i> Converted Clients
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    <!-- Projections - For Caller users and Manager (not Admin) -->
+                    {% if current_user.role.name == 'Caller' or (current_user.has_permission('manage_leads') and current_user.role.name != 'Admin') %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('main.projections') }}">
+                                <i class="fas fa-chart-line"></i> Projections
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('main.converted_clients_management') }}">
+                                <i class="fas fa-users"></i> My Clients
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('main.converted_leads_management') }}">
+                                <i class="fas fa-trophy"></i> Existing Leads
+                            </a>
+                        </li>
+                    {% endif %}
+                    
+
+                    
+                    <!-- Production - Only for Production role users -->
+                    {% if current_user.is_authenticated and current_user.has_permission('view_tasks') and current_user.role and current_user.role.name == 'Production' %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="productionDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            🏭 Production
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="productionDropdown">
+                            <li><a class="dropdown-item" href="{{ url_for('production.dashboard') }}">📊 Dashboard</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('production.tasks') }}">📋 Tasks</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('production.upload_files') }}">📁 Upload Files</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('production.lan_server') }}">🌐 LAN Server</a></li>
+                        </ul>
+                    </li>
+                    {% endif %}
+                    
+                    <!-- Task Management - Only for Productions Manager -->
+                    {% if current_user.is_authenticated and current_user.has_permission('manage_productions_team') %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('productions.task_management') }}">
+                            <i class="fas fa-tasks"></i> Task Management
+                        </a>
+                    </li>
+                    {% endif %}
+                    {% if current_user.has_permission('admin') %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-cog"></i> Admin
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{{ url_for('main.admin_activity_dashboard') }}">
+                                <i class="fas fa-chart-line"></i> Activity Dashboard
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.admin_projections_overview') }}">
+                                <i class="fas fa-chart-line"></i> Projections Overview
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.admin_converted_clients') }}">
+                                <i class="fas fa-users"></i> Converted Clients
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.admin_manage_tasks') }}">
+                                <i class="fas fa-tasks"></i> Task Management
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.admin_task_audit_logs') }}">
+                                <i class="fas fa-history"></i> Task Audit Logs
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.admin_production_dashboard') }}">
+                                <i class="fas fa-industry"></i> Production Dashboard
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('marketing.dashboard') }}">
+                                <i class="fas fa-chart-line"></i> Marketing Dashboard
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('auth.admin_users') }}">
+                                <i class="fas fa-users"></i> User Management
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('auth.admin_profile_changes') }}">
+                                <i class="fas fa-user-edit"></i> Profile Change Requests
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('auth.admin_roles') }}">
+                                <i class="fas fa-user-tag"></i> Role Management
+                            </a></li>
+                        </ul>
+                    </li>
+                    {% endif %}
+                </ul>
+                
+                <!-- Compact Timezone Display -->
+                {% if not current_user.is_authenticated or not current_user.has_permission('view_tasks') %}
+                <div class="navbar-nav me-3">
+                    <div class="compact-timezone-container">
+                        <div class="d-flex align-items-center">
+                            <span class="timezone-icon clickable" onclick="resetToBestCallingTimes()" title="Reset to best calling times">🕐</span>
+                            <div class="compact-timezone-display">
+                                <span class="compact-timezone-item" id="primary-timezone">
+                                    <span class="compact-label" id="primary-label"></span>
+                                    <span class="compact-time" id="primary-time"></span>
+                                </span>
+                                <span class="compact-separator">|</span>
+                                <span class="compact-timezone-item" id="secondary-timezone">
+                                    <span class="compact-label" id="secondary-label"></span>
+                                    <span class="compact-time" id="secondary-time"></span>
+                                </span>
+                            </div>
+                            <button class="compact-timezone-toggle" onclick="cycleTimezones()" title="Queue next best time">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Facebook-style Notifications -->
+                {% if current_user.is_authenticated %}
+                <div class="navbar-nav me-3">
+                    <div class="navbar-notifications">
+                        <button class="notifications-icon" id="notifications-toggle">
+                            <i class="fas fa-bell"></i>
+                            <span class="notifications-badge" id="notifications-count" style="display: none;">0</span>
+                        </button>
+                        <div class="notifications-dropdown" id="notifications-dropdown">
+                            <div class="notifications-header">
+                                <h6>Notifications</h6>
+                                <button class="mark-all-read" id="mark-all-read-btn">Mark all read</button>
+                            </div>
+                            <div class="notifications-list" id="notifications-list">
+                                <!-- Notifications will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- User Menu -->
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user-circle"></i> {{ current_user.get_full_name() }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end user-menu">
+                            <li><a class="dropdown-item" href="{{ url_for('auth.profile') }}">
+                                <i class="fas fa-user"></i> Profile
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('auth.change_password') }}">
+                                <i class="fas fa-key"></i> Change Password
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">
+                                <i class="fas fa-sign-out-alt"></i> Logout
+                            </a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    {% endif %}
+    
+    <!-- Floating Message Box -->
+    {% if current_user.is_authenticated %}
+    <div class="floating-message-box">
+        <div class="floating-message-icon" id="floating-message-icon">
+            <i class="fas fa-comments"></i>
+        </div>
+        
+
+        
+        <div class="message-box-modal" id="message-box-modal">
+            <div class="message-box-header">
+                <h5><i class="fas fa-comments"></i> Team Chat</h5>
+                <div class="message-box-actions">
+                    <button class="message-box-maximize" id="message-box-maximize" title="Open Full Messenger">
+                        <i class="fas fa-expand"></i>
+                    </button>
+                    <button class="message-box-close" id="message-box-close">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="message-box-content">
+                <div class="message-box-messages" id="message-box-messages">
+                    <!-- Messages will be loaded here -->
+                </div>
+                <div class="message-box-input" style="position: relative;">
+                    <input type="text" id="message-box-input" placeholder="Type your message...">
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="container-fluid mt-3">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+    
+    <!-- Main Content -->
+    <main class="{% if current_user.is_authenticated %}container-fluid mt-3{% endif %}">
+        {% block content %}{% endblock %}
+    </main>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+    
+    <!-- Compact Timezone Script -->
+    <script>
+        // All available timezones with their office hours
+        // Get PC's local timezone
+        const localTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        const localTimezoneLabel = new Date().toLocaleTimeString('en-US', {
+            timeZoneName: 'short'
+        }).split(' ').pop();
+        
+        const allTimezones = [
+            { label: localTimezoneLabel, zone: 'local', officeHours: { start: 9, end: 17 } },
+            { label: 'PST', zone: 'America/Los_Angeles', officeHours: { start: 9, end: 17 } },
+            { label: 'MST', zone: 'America/Denver', officeHours: { start: 9, end: 17 } },
+            { label: 'CST', zone: 'America/Chicago', officeHours: { start: 9, end: 17 } },
+            { label: 'EST', zone: 'America/New_York', officeHours: { start: 9, end: 17 } },
+            { label: 'GMT', zone: 'GMT', officeHours: { start: 9, end: 17 } },
+            { label: 'CET', zone: 'Europe/Berlin', officeHours: { start: 9, end: 17 } },
+            { label: 'EET', zone: 'Europe/Athens', officeHours: { start: 9, end: 17 } },
+            { label: 'AEST', zone: 'Australia/Sydney', officeHours: { start: 9, end: 17 } },
+            { label: 'ACST', zone: 'Australia/Adelaide', officeHours: { start: 9, end: 17 } },
+            { label: 'AWST', zone: 'Australia/Perth', officeHours: { start: 9, end: 17 } }
+        ];
+        
+        let currentPairIndex = 0;
+        
+        function getTimeInTimezone(timezone) {
+            const now = new Date();
+            
+            // If it's the local timezone, use PC's local time
+            if (timezone.zone === 'local') {
+                return now.toLocaleTimeString('en-US', {
+                    hour12: true,
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            }
+            
+            return now.toLocaleTimeString('en-US', {
+                timeZone: timezone.zone,
+                hour12: true,
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+        
+        function isOfficeHours(timezone) {
+            const now = new Date();
+            
+            // For local timezone, use PC's local time
+            if (timezone.zone === 'local') {
+                const hour = now.getHours();
+                return hour >= timezone.officeHours.start && hour < timezone.officeHours.end;
+            }
+            
+            const timeInZone = new Date(now.toLocaleString('en-US', { timeZone: timezone.zone }));
+            const hour = timeInZone.getHours();
+            return hour >= timezone.officeHours.start && hour < timezone.officeHours.end;
+        }
+        
+        function findBestCallingTimes() {
+            const now = new Date();
+            const pcHour = now.getHours();
+            
+            // Always prioritize showing local timezone first
+            let bestPairs = [];
+            
+            // Primary pair: Local timezone with a complementary timezone
+            if (pcHour >= 6 && pcHour < 12) {
+                // Morning: Show local time with EST
+                bestPairs = [
+                    { primary: allTimezones[0], secondary: allTimezones[4] }, // Local ↔ EST
+                    { primary: allTimezones[0], secondary: allTimezones[6] }, // Local ↔ GMT
+                    { primary: allTimezones[0], secondary: allTimezones[8] }  // Local ↔ AEST
+                ];
+            } else if (pcHour >= 12 && pcHour < 18) {
+                // Afternoon: Show local time with GMT
+                bestPairs = [
+                    { primary: allTimezones[0], secondary: allTimezones[6] }, // Local ↔ GMT
+                    { primary: allTimezones[0], secondary: allTimezones[7] }, // Local ↔ CET
+                    { primary: allTimezones[0], secondary: allTimezones[9] }  // Local ↔ AEST
+                ];
+            } else if (pcHour >= 18 && pcHour < 24) {
+                // Evening: Show local time with CET
+                bestPairs = [
+                    { primary: allTimezones[0], secondary: allTimezones[7] }, // Local ↔ CET
+                    { primary: allTimezones[0], secondary: allTimezones[8] }, // Local ↔ EET
+                    { primary: allTimezones[0], secondary: allTimezones[10] } // Local ↔ AWST
+                ];
+            } else {
+                // Night: Show local time with AEST
+                bestPairs = [
+                    { primary: allTimezones[0], secondary: allTimezones[8] }, // Local ↔ AEST
+                    { primary: allTimezones[0], secondary: allTimezones[6] }, // Local ↔ GMT
+                    { primary: allTimezones[0], secondary: allTimezones[7] }  // Local ↔ CET
+                ];
+            }
+            
+            return bestPairs;
+        }
+        
+        function resetToBestCallingTimes() {
+            const bestPairs = findBestCallingTimes();
+            currentPairIndex = 0; // Reset to first pair
+            updateCompactTimezones();
+            
+            // Add animation to the clock icon
+            const clockIcon = document.querySelector('.timezone-icon.clickable');
+            clockIcon.style.transform = 'rotate(360deg)';
+            setTimeout(() => {
+                clockIcon.style.transform = 'rotate(0deg)';
+            }, 500);
+        }
+        
+        function updateCompactTimezones() {
+            const bestPairs = findBestCallingTimes();
+            const currentPair = bestPairs[currentPairIndex % bestPairs.length];
+            
+            try {
+                // Update primary timezone
+                const primaryTime = getTimeInTimezone(currentPair.primary);
+                const primaryLabel = document.getElementById('primary-label');
+                const primaryTimeElement = document.getElementById('primary-time');
+                if (primaryLabel) primaryLabel.textContent = currentPair.primary.label;
+                if (primaryTimeElement) primaryTimeElement.textContent = primaryTime;
+                
+                // Update secondary timezone
+                const secondaryTime = getTimeInTimezone(currentPair.secondary);
+                const secondaryLabel = document.getElementById('secondary-label');
+                const secondaryTimeElement = document.getElementById('secondary-time');
+                if (secondaryLabel) secondaryLabel.textContent = currentPair.secondary.label;
+                if (secondaryTimeElement) secondaryTimeElement.textContent = secondaryTime;
+                
+                // Highlight if in office hours
+                const primaryItem = document.getElementById('primary-timezone');
+                const secondaryItem = document.getElementById('secondary-timezone');
+                
+                if (primaryItem && isOfficeHours(currentPair.primary)) {
+                    primaryItem.style.background = 'rgba(76, 175, 80, 0.3)'; // Green for office hours
+                } else if (primaryItem) {
+                    primaryItem.style.background = 'rgba(255,255,255,0.1)';
+                }
+                
+                if (secondaryItem && isOfficeHours(currentPair.secondary)) {
+                    secondaryItem.style.background = 'rgba(76, 175, 80, 0.3)'; // Green for office hours
+                } else if (secondaryItem) {
+                    secondaryItem.style.background = 'rgba(255,255,255,0.1)';
+                }
+                
+            } catch (e) {
+                console.log('Error updating compact timezones:', e);
+            }
+        }
+        
+        function cycleTimezones() {
+            const bestPairs = findBestCallingTimes();
+            currentPairIndex = (currentPairIndex + 1) % bestPairs.length;
+            updateCompactTimezones();
+            
+            // Add a brief animation to the toggle button
+            const toggle = document.querySelector('.compact-timezone-toggle');
+            toggle.style.transform = 'rotate(360deg)';
+            setTimeout(() => {
+                toggle.style.transform = 'rotate(0deg)';
+            }, 300);
+        }
+        
+        // Initialize and start updating
+        document.addEventListener('DOMContentLoaded', function() {
+            updateCompactTimezones();
+            
+            // Update every minute to keep times current
+            setInterval(updateCompactTimezones, 60000);
+        });
+    </script>
+    
+    <script src="{{ url_for('static', filename='js/floating-message-box.js', v='1.6') }}"></script>
+    <script src="{{ url_for('static', filename='js/facebook-notifications.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/enhanced-chat.js', v='1.5') }}"></script>
+    
+    <!-- Hide floating message box on full messenger page -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if we're on the full messenger page
+            const isFullMessenger = window.location.pathname.includes('/production/messenger');
+            const floatingMessageBox = document.querySelector('.floating-message-box');
+            
+            if (isFullMessenger && floatingMessageBox) {
+                // Hide the floating message box when full messenger is open
+                floatingMessageBox.style.display = 'none';
+            } else if (floatingMessageBox) {
+                // Show the floating message box on other pages
+                floatingMessageBox.style.display = 'block';
+            }
+        });
+    </script>
+    
+    <!-- Floating Message Box Click Handlers -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM Content Loaded - Setting up floating message box...');
+            
+            // Initialize Floating Message Box
+            if (document.getElementById('floating-message-icon')) {
+                console.log('Floating message icon found, initializing...');
+                try {
+                    window.floatingMessageBox = new FloatingMessageBox();
+                    console.log('FloatingMessageBox initialized successfully');
+                } catch (error) {
+                    console.error('Error initializing FloatingMessageBox:', error);
+                }
+            } else {
+                console.log('Floating message icon not found');
+            }
+            
+            // Floating Message Box Toggle
+            const floatingIcon = document.getElementById('floating-message-icon');
+            const messageBoxModal = document.getElementById('message-box-modal');
+            const messageBoxClose = document.getElementById('message-box-close');
+            
+            console.log('Elements found:', {
+                floatingIcon: !!floatingIcon,
+                messageBoxModal: !!messageBoxModal,
+                messageBoxClose: !!messageBoxClose
+            });
+            
+            if (floatingIcon) {
+                floatingIcon.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Floating icon clicked');
+                    if (messageBoxModal) {
+                        const currentDisplay = messageBoxModal.style.display;
+                        const newDisplay = currentDisplay === 'block' ? 'none' : 'block';
+                        messageBoxModal.style.display = newDisplay;
+                        console.log('Modal display changed from', currentDisplay, 'to', newDisplay);
+                    } else {
+                        console.log('Message box modal not found');
+                    }
+                });
+            }
+            
+            if (messageBoxClose) {
+                messageBoxClose.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Close button clicked');
+                    if (messageBoxModal) {
+                        messageBoxModal.style.display = 'none';
+                        console.log('Modal closed');
+                    }
+                });
+            }
+
+            // Maximize button handler
+            const messageBoxMaximize = document.getElementById('message-box-maximize');
+            if (messageBoxMaximize) {
+                messageBoxMaximize.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Maximize button clicked');
+                    // Open full messenger interface
+                    window.open('/production/messenger', '_blank');
+                });
+            }
+            
+            // Close message box when clicking outside
+            document.addEventListener('click', function(e) {
+                if (messageBoxModal && messageBoxModal.style.display === 'block') {
+                    if (!floatingIcon.contains(e.target) && !messageBoxModal.contains(e.target)) {
+                        messageBoxModal.style.display = 'none';
+                        console.log('Modal closed by clicking outside');
+                    }
+                }
+            });
+            
+            // Notifications Toggle
+            const notificationsToggle = document.getElementById('notifications-toggle');
+            const notificationsDropdown = document.getElementById('notifications-dropdown');
+            
+            if (notificationsToggle) {
+                notificationsToggle.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    notificationsDropdown.style.display = notificationsDropdown.style.display === 'block' ? 'none' : 'block';
+                });
+            }
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(e) {
+                if (notificationsToggle && !notificationsToggle.contains(e.target) && !notificationsDropdown.contains(e.target)) {
+                    notificationsDropdown.style.display = 'none';
+                }
+            });
+            
+
+        });
+    </script>
+    
+    {% block scripts %}{% endblock %}
+    {% block extra_js %}{% endblock %}
+</body>
+</html> 

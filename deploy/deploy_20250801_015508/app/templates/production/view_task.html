@@ -1,0 +1,245 @@
+{% extends 'base.html' %}
+{% block title %}📋 Task Details - Production{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('production.dashboard') }}">🏭 Production</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('production.tasks') }}">📋 Tasks</a></li>
+                    <li class="breadcrumb-item active">{{ task.title }}</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <!-- Task Details -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">📋 {{ task.title }}</h4>
+                    <div>
+                        <span class="badge bg-{{ task.get_status_color() }} fs-6">
+                            {{ task.status.replace('_', ' ').title() }}
+                        </span>
+                        <span class="badge bg-{{ task.get_priority_color() }} fs-6 ms-2">
+                            {{ task.priority.title() }}
+                        </span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if task.description %}
+                        <div class="mb-4">
+                            <h6>📝 Description</h6>
+                            <p class="text-muted">{{ task.description }}</p>
+                        </div>
+                    {% endif %}
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>📊 Task Information</h6>
+                            <table class="table table-sm">
+                                <tr>
+                                    <td><strong>Type:</strong></td>
+                                    <td>{{ task.task_type.replace('_', ' ').title() }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Created:</strong></td>
+                                    <td>{{ task.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Updated:</strong></td>
+                                    <td>{{ task.updated_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                </tr>
+                                {% if task.due_date %}
+                                <tr>
+                                    <td><strong>Due Date:</strong></td>
+                                    <td>
+                                        {% set days_until = (task.due_date - now.date()).days %}
+                                        {% if days_until < 0 %}
+                                            <span class="text-danger">{{ task.due_date.strftime('%Y-%m-%d') }} (Overdue)</span>
+                                        {% elif days_until == 0 %}
+                                            <span class="text-warning">{{ task.due_date.strftime('%Y-%m-%d') }} (Due Today)</span>
+                                        {% elif days_until <= 3 %}
+                                            <span class="text-warning">{{ task.due_date.strftime('%Y-%m-%d') }} ({{ days_until }} days left)</span>
+                                        {% else %}
+                                            <span class="text-muted">{{ task.due_date.strftime('%Y-%m-%d') }}</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endif %}
+                                {% if task.completed_at %}
+                                <tr>
+                                    <td><strong>Completed:</strong></td>
+                                    <td>{{ task.completed_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                </tr>
+                                {% endif %}
+                            </table>
+                        </div>
+
+                        <div class="col-md-6">
+                            <h6>👥 Client Information</h6>
+                            {% if task.client_id %}
+                                <table class="table table-sm">
+                                    <tr>
+                                        <td><strong>Client ID:</strong></td>
+                                        <td><span class="badge bg-secondary">{{ task.client_id }}</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Client Name:</strong></td>
+                                        <td><span class="text-muted">🔒 Restricted</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Contact:</strong></td>
+                                        <td><span class="text-muted">🔒 Restricted</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Phone:</strong></td>
+                                        <td><span class="text-muted">🔒 Restricted</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Email:</strong></td>
+                                        <td><span class="text-muted">🔒 Restricted</span></td>
+                                    </tr>
+                                </table>
+                            {% else %}
+                                <p class="text-muted">No client information available</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Task Update Form -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">✏️ Update Task</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('production.update_task', task_id=task.id) }}">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="status" class="form-label">Status</label>
+                                    <select class="form-select" id="status" name="status" required>
+                                        <option value="pending" {% if task.status == 'pending' %}selected{% endif %}>Pending</option>
+                                        <option value="in_progress" {% if task.status == 'in_progress' %}selected{% endif %}>In Progress</option>
+                                        <option value="completed" {% if task.status == 'completed' %}selected{% endif %}>Completed</option>
+                                        <option value="cancelled" {% if task.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="description" class="form-label">Update Description</label>
+                                    <textarea class="form-control" id="description" name="description" rows="3" 
+                                              placeholder="Add any updates or notes about this task...">{{ task.description or '' }}</textarea>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">💾 Update Task</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <!-- Quick Actions -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">⚡ Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('production.upload_files') }}?task_id={{ task.id }}" 
+                           class="btn btn-primary">
+                            📁 Upload Files
+                        </a>
+                        <a href="{{ url_for('production.lan_server') }}" 
+                           class="btn btn-outline-primary">
+                            🌐 Access LAN Server
+                        </a>
+                        <button class="btn btn-outline-success" 
+                                onclick="updateTaskStatus('{{ task.id }}', 'in_progress')"
+                                {% if task.status == 'in_progress' %}disabled{% endif %}>
+                            ▶️ Start Task
+                        </button>
+                        <button class="btn btn-outline-warning" 
+                                onclick="updateTaskStatus('{{ task.id }}', 'completed')"
+                                {% if task.status == 'completed' %}disabled{% endif %}>
+                            ✅ Complete Task
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Task Attachments -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">📎 Attachments</h5>
+                </div>
+                <div class="card-body">
+                    {% if task.attachments %}
+                        <div class="list-group list-group-flush">
+                            {% for attachment in task.attachments %}
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <strong>{{ attachment.original_filename }}</strong>
+                                        <br><small class="text-muted">{{ attachment.get_file_size_mb() }} MB</small>
+                                        <br><small class="text-muted">Source: {{ attachment.upload_source.title() }}</small>
+                                    </div>
+                                    <small class="text-muted">{{ attachment.uploaded_at.strftime('%m/%d') }}</small>
+                                </div>
+                                <div class="mt-2">
+                                    <a href="/static/uploads/production/{{ attachment.filename }}" 
+                                       class="btn btn-sm btn-outline-primary" target="_blank">
+                                        📥 Download
+                                    </a>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center py-3">No attachments</p>
+                        <div class="text-center">
+                            <a href="{{ url_for('production.upload_files') }}?task_id={{ task.id }}" 
+                               class="btn btn-sm btn-outline-primary">
+                                📁 Add Files
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function updateTaskStatus(taskId, status) {
+    if (confirm(`Are you sure you want to mark this task as ${status.replace('_', ' ')}?`)) {
+        const formData = new FormData();
+        formData.append('status', status);
+        
+        fetch(`/production/tasks/${taskId}/update`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('Failed to update task status. Please try again.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to update task status. Please try again.');
+        });
+    }
+}
+</script>
+{% endblock %} 

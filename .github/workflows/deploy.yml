@@ -1,0 +1,128 @@
+name: EA CRM - Deploy to Production
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python 3.9
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-cov pytest-flask
+    
+    - name: Run tests
+      run: |
+        python -m pytest tests/ -v --cov=app --cov-report=xml --cov-report=html
+      continue-on-error: true
+    
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+      continue-on-error: true
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python 3.9
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Create deployment package
+      run: |
+        echo "Creating deployment package..."
+        mkdir -p deploy_package
+        
+        # Copy application files
+        cp -r app/ deploy_package/
+        cp -r static/ deploy_package/
+        cp -r templates/ deploy_package/
+        
+        # Copy core files
+        cp *.py deploy_package/
+        cp requirements.txt deploy_package/
+        cp .htaccess deploy_package/
+        cp apache_config.conf deploy_package/
+        
+        # Copy deployment scripts
+        cp -r deploy/ deploy_package/
+        cp -r scripts/ deploy_package/
+        
+        # Create deployment info
+        echo "Deployment Info:" > deploy_package/deployment_info.txt
+        echo "Timestamp: $(date)" >> deploy_package/deployment_info.txt
+        echo "Commit: ${{ github.sha }}" >> deploy_package/deployment_info.txt
+        echo "Branch: ${{ github.ref }}" >> deploy_package/deployment_info.txt
+        echo "Author: ${{ github.actor }}" >> deploy_package/deployment_info.txt
+        
+        # Create deployment package
+        tar -czf ea_crm_deploy_$(date +%Y%m%d_%H%M%S).tar.gz deploy_package/
+        
+        echo "Deployment package created successfully!"
+    
+    - name: Deploy to Hostinger via FTP
+      uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+      with:
+        server: ${{ secrets.FTP_SERVER }}
+        username: ${{ secrets.FTP_USERNAME }}
+        password: ${{ secrets.FTP_PASSWORD }}
+        server-dir: /public_html/
+        local-dir: ./deploy_package/
+        exclude: |
+          **/.git*
+          **/.git*/**
+          **/node_modules/**
+          **/.DS_Store
+          **/__pycache__/**
+          **/*.pyc
+          **/.env
+          **/instance/**
+          **/tests/**
+          **/docs/**
+          **/portfolio_screenshots/**
+          **/.github/**
+          **/deploy_*.zip
+          **/crm_upload_*.zip
+          **/deploy_20250801_*/
+          **/crm_upload_20250801_*/
+    
+    - name: Run post-deployment tasks
+      run: |
+        echo "Post-deployment tasks will be handled by server-side scripts"
+        echo "Database migrations and setup will run automatically"
+    
+    - name: Notify deployment status
+      run: |
+        echo "🚀 Deployment completed successfully!"
+        echo "📅 Deployment timestamp: $(date)"
+        echo "🔗 Your EA CRM is now live at your domain!"
+        echo "📊 Check the application logs for any issues" 

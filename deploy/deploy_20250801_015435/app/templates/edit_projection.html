@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Projection{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-warning text-white">
+                    <h4 class="mb-0"><i class="fas fa-edit"></i> Edit Projection</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Projection Type</label>
+                            <input type="text" class="form-control" value="{{ projection.projection_type|title }}" readonly>
+                            <div class="form-text">Projection type cannot be changed</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Month</label>
+                            <input type="text" class="form-control" value="{{ projection.month_year.strftime('%B %Y') }}" readonly>
+                            <div class="form-text">Month cannot be changed</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="target_value" class="form-label">Target Value *</label>
+                            <input type="number" class="form-control" id="target_value" name="target_value" 
+                                   min="1" required value="{{ projection.target_value }}">
+                            <div class="form-text">Update your monthly target for this projection</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Notes</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="3" 
+                                      placeholder="Add any notes or comments about this projection">{{ projection.notes or '' }}</textarea>
+                            <div class="form-text">Optional notes to help track your goals</div>
+                        </div>
+                        
+                        <!-- Current Progress Display -->
+                        <div class="mb-3">
+                            <label class="form-label">Current Progress</label>
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <div class="row text-center">
+                                        <div class="col-4">
+                                            <h6 class="text-muted">Target</h6>
+                                            <h4 class="text-primary">{{ projection.target_value }}</h4>
+                                        </div>
+                                        <div class="col-4">
+                                            <h6 class="text-muted">Actual</h6>
+                                            <h4 class="text-{{ projection.get_status_color() }}">{{ projection.actual_value }}</h4>
+                                        </div>
+                                        <div class="col-4">
+                                            <h6 class="text-muted">Completion</h6>
+                                            <h4 class="text-{{ projection.get_status_color() }}">{{ "%.1f"|format(projection.completion_percentage) }}%</h4>
+                                        </div>
+                                    </div>
+                                    <div class="progress mt-2" style="height: 8px;">
+                                        <div class="progress-bar bg-{{ projection.get_status_color() }}" 
+                                             style="width: {{ projection.completion_percentage }}%">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('main.projections') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Back to Projections
+                            </a>
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-save"></i> Update Projection
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Projection Status -->
+            <div class="card mt-4">
+                <div class="card-header bg-{{ projection.get_status_color() }} text-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-line"></i> Projection Status</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Status Indicators:</h6>
+                            <ul class="list-unstyled">
+                                <li><span class="badge bg-success">100%+</span> Target Achieved</li>
+                                <li><span class="badge bg-warning">75-99%</span> On Track</li>
+                                <li><span class="badge bg-info">50-74%</span> In Progress</li>
+                                <li><span class="badge bg-danger">0-49%</span> Needs Attention</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Current Status:</h6>
+                            {% if projection.completion_percentage >= 100 %}
+                                <div class="alert alert-success">
+                                    <i class="fas fa-check-circle"></i> <strong>Target Achieved!</strong>
+                                    <br>You've exceeded your target for this month.
+                                </div>
+                            {% elif projection.completion_percentage >= 75 %}
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-clock"></i> <strong>On Track</strong>
+                                    <br>You're making good progress toward your target.
+                                </div>
+                            {% elif projection.completion_percentage >= 50 %}
+                                <div class="alert alert-info">
+                                    <i class="fas fa-play-circle"></i> <strong>In Progress</strong>
+                                    <br>You're making steady progress toward your target.
+                                </div>
+                            {% else %}
+                                <div class="alert alert-danger">
+                                    <i class="fas fa-exclamation-triangle"></i> <strong>Needs Attention</strong>
+                                    <br>Consider adjusting your strategy to meet your target.
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

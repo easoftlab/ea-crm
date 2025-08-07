@@ -1,0 +1,315 @@
+{% extends "base.html" %}
+
+{% block title %}Team Member Performance - {{ member.get_full_name() }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0 text-warning">
+                        <i class="fas fa-user-chart me-2"></i>{{ member.get_full_name() }} - Performance
+                    </h1>
+                    <p class="text-muted mb-0">Detailed performance metrics and analytics</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{{ url_for('productions.dashboard') }}" class="btn btn-outline-warning">
+                        <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+                    </a>
+                    <a href="{{ url_for('productions.team') }}" class="btn btn-outline-info">
+                        <i class="fas fa-users me-1"></i>Team Overview
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Member Info Card -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-warning text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-user me-2"></i>Team Member Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="d-flex align-items-center">
+                                <img src="{{ member.get_profile_image_url() }}" 
+                                     class="rounded-circle me-3" 
+                                     width="64" height="64" 
+                                     alt="{{ member.get_full_name() }}">
+                                <div>
+                                    <h5 class="mb-1">{{ member.get_full_name() }}</h5>
+                                    <p class="text-muted mb-0">{{ member.username }}</p>
+                                    <small class="text-muted">{{ member.role.name }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-9">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="text-center">
+                                        <h4 class="text-warning mb-1">{{ tasks_completed }}</h4>
+                                        <small class="text-muted">Tasks Completed</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="text-center">
+                                        <h4 class="text-info mb-1">{{ tasks_assigned }}</h4>
+                                        <small class="text-muted">Tasks Assigned</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="text-center">
+                                        <h4 class="text-success mb-1">
+                                            {{ "%.1f"|format((tasks_completed / tasks_assigned * 100) if tasks_assigned > 0 else 0) }}%
+                                        </h4>
+                                        <small class="text-muted">Completion Rate</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="text-center">
+                                        <h4 class="text-primary mb-1">{{ productivity_data|length }}</h4>
+                                        <small class="text-muted">Active Days</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Date Filter -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+                        <div class="col-md-4">
+                            <label for="start_date" class="form-label">Start Date</label>
+                            <input type="date" class="form-control" id="start_date" name="start_date" 
+                                   value="{{ start_date.isoformat() }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="end_date" class="form-label">End Date</label>
+                            <input type="date" class="form-control" id="end_date" name="end_date" 
+                                   value="{{ end_date.isoformat() }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">&nbsp;</label>
+                            <button type="submit" class="btn btn-warning d-block w-100">
+                                <i class="fas fa-filter me-1"></i>Apply Filter
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Performance Charts -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-line me-2"></i>Productivity Trend
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="productivityChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>Task Completion
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="taskChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Performance Data Table -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-table me-2"></i>Daily Performance Data
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Productivity Score</th>
+                                    <th>Tasks Completed</th>
+                                    <th>Tasks Assigned</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for data in productivity_data %}
+                                <tr>
+                                    <td>{{ data.date.strftime('%Y-%m-%d') }}</td>
+                                    <td>
+                                        <div class="progress" style="height: 20px;">
+                                            <div class="progress-bar bg-warning" 
+                                                 style="width: {{ data.productivity_score }}%">
+                                                {{ "%.1f"|format(data.productivity_score) }}%
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-success">{{ data.tasks_completed }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">{{ data.tasks_assigned }}</span>
+                                    </td>
+                                    <td>
+                                        {% if data.productivity_score >= 80 %}
+                                            <span class="badge bg-success">Excellent</span>
+                                        {% elif data.productivity_score >= 60 %}
+                                            <span class="badge bg-warning">Good</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Needs Improvement</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-bolt me-2"></i>Quick Actions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('productions.tasks') }}?assigned_to={{ member.id }}" class="btn btn-outline-warning w-100">
+                                <i class="fas fa-tasks me-2"></i>View Tasks
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('productions.team_member_report', member_id=member.id) }}" class="btn btn-outline-info w-100">
+                                <i class="fas fa-chart-bar me-2"></i>Detailed Report
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('productions.team_chat') }}" class="btn btn-outline-success w-100">
+                                <i class="fas fa-comments me-2"></i>Team Chat
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('productions.team') }}" class="btn btn-outline-primary w-100">
+                                <i class="fas fa-users me-2"></i>Team Management
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js for charts -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- JavaScript for charts -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Productivity Trend Chart
+    const productivityCtx = document.getElementById('productivityChart').getContext('2d');
+    new Chart(productivityCtx, {
+        type: 'line',
+        data: {
+            labels: [{% for data in productivity_data %}'{{ data.date.strftime('%m-%d') }}'{% if not loop.last %}, {% endif %}{% endfor %}],
+            datasets: [{
+                label: 'Productivity Score',
+                data: [{% for data in productivity_data %}{{ data.productivity_score }}{% if not loop.last %}, {% endif %}{% endfor %}],
+                borderColor: '#ffc107',
+                backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+    
+    // Task Completion Chart
+    const taskCtx = document.getElementById('taskChart').getContext('2d');
+    new Chart(taskCtx, {
+        type: 'bar',
+        data: {
+            labels: [{% for data in productivity_data %}'{{ data.date.strftime('%m-%d') }}'{% if not loop.last %}, {% endif %}{% endfor %}],
+            datasets: [{
+                label: 'Tasks Completed',
+                data: [{% for data in productivity_data %}{{ data.tasks_completed }}{% if not loop.last %}, {% endif %}{% endfor %}],
+                backgroundColor: '#28a745',
+                borderColor: '#28a745',
+                borderWidth: 1
+            }, {
+                label: 'Tasks Assigned',
+                data: [{% for data in productivity_data %}{{ data.tasks_assigned }}{% if not loop.last %}, {% endif %}{% endfor %}],
+                backgroundColor: '#17a2b8',
+                borderColor: '#17a2b8',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top'
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %} 

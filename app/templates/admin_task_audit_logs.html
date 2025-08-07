@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+
+{% block title %}Task Audit Logs{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2><i class="fas fa-history"></i> Task Audit Logs</h2>
+                <div>
+                    <a href="{{ url_for('main.admin_manage_tasks') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-tasks"></i> Manage Tasks
+                    </a>
+                    <a href="{{ url_for('main.admin_activity_dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-chart-bar"></i> Activity Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-filter"></i> Filters</h5>
+                </div>
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+                        <div class="col-md-3">
+                            <label for="operation" class="form-label">Operation</label>
+                            <select class="form-select" id="operation" name="operation">
+                                <option value="">All Operations</option>
+                                <option value="create">Create</option>
+                                <option value="update">Update</option>
+                                <option value="delete">Delete</option>
+                                <option value="status_change">Status Change</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="task_type" class="form-label">Task Type</label>
+                            <select class="form-select" id="task_type" name="task_type">
+                                <option value="">All Types</option>
+                                <option value="user_task">User Task</option>
+                                <option value="production_task">Production Task</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="user_id" class="form-label">User</label>
+                            <select class="form-select" id="user_id" name="user_id">
+                                <option value="">All Users</option>
+                                {% for user in users %}
+                                <option value="{{ user.id }}">{{ user.get_full_name() }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="date_range" class="form-label">Date Range</label>
+                            <select class="form-select" id="date_range" name="date_range">
+                                <option value="">All Time</option>
+                                <option value="today">Today</option>
+                                <option value="week">This Week</option>
+                                <option value="month">This Month</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search"></i> Apply Filters
+                            </button>
+                            <a href="{{ url_for('main.admin_task_audit_logs') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times"></i> Clear Filters
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Audit Logs Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-list"></i> Audit Logs</h5>
+                </div>
+                <div class="card-body">
+                    {% if audit_logs.items %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Timestamp</th>
+                                    <th>User</th>
+                                    <th>Operation</th>
+                                    <th>Task Type</th>
+                                    <th>Task ID</th>
+                                    <th>Field</th>
+                                    <th>Old Value</th>
+                                    <th>New Value</th>
+                                    <th>Description</th>
+                                    <th>IP Address</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for log in audit_logs.items %}
+                                <tr>
+                                    <td>
+                                        <small class="text-muted">{{ log.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</small>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-sm bg-primary rounded-circle d-flex align-items-center justify-content-center me-2">
+                                                <span class="text-white fw-bold">{{ log.user.username[0].upper() }}</span>
+                                            </div>
+                                            <div>
+                                                <strong>{{ log.user.get_full_name() }}</strong>
+                                                <br>
+                                                <small class="text-muted">{{ log.user.username }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ log.get_operation_color() }}">
+                                            <i class="fas {{ log.get_operation_icon() }}"></i>
+                                            {{ log.operation.replace('_', ' ').title() }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ 'info' if log.task_type == 'user_task' else 'warning' }}">
+                                            {{ log.task_type.replace('_', ' ').title() }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('main.admin_task_audit_logs_detail', task_id=log.task_id, type=log.task_type) }}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye"></i> {{ log.task_id }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        {% if log.field_name %}
+                                            <code>{{ log.field_name }}</code>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if log.old_value %}
+                                            <span class="text-danger">{{ log.old_value[:50] }}{% if log.old_value|length > 50 %}...{% endif %}</span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if log.new_value %}
+                                            <span class="text-success">{{ log.new_value[:50] }}{% if log.new_value|length > 50 %}...{% endif %}</span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if log.description %}
+                                            <small>{{ log.description }}</small>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ log.user_ip or '-' }}</small>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if audit_logs.pages > 1 %}
+                    <nav aria-label="Audit logs pagination">
+                        <ul class="pagination justify-content-center">
+                            {% if audit_logs.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('main.admin_task_audit_logs', page=audit_logs.prev_num) }}">
+                                    <i class="fas fa-chevron-left"></i> Previous
+                                </a>
+                            </li>
+                            {% endif %}
+                            
+                            {% for page_num in audit_logs.iter_pages() %}
+                                {% if page_num %}
+                                    {% if page_num != audit_logs.page %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('main.admin_task_audit_logs', page=page_num) }}">{{ page_num }}</a>
+                                    </li>
+                                    {% else %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ page_num }}</span>
+                                    </li>
+                                    {% endif %}
+                                {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">...</span>
+                                </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if audit_logs.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('main.admin_task_audit_logs', page=audit_logs.next_num) }}">
+                                    Next <i class="fas fa-chevron-right"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-history fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No audit logs found</h5>
+                        <p class="text-muted">No task operations have been logged yet.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-submit form when filters change
+    const filterSelects = document.querySelectorAll('#operation, #task_type, #user_id, #date_range');
+    filterSelects.forEach(select => {
+        select.addEventListener('change', function() {
+            this.closest('form').submit();
+        });
+    });
+});
+</script>
+{% endblock %} 

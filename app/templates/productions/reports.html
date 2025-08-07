@@ -1,0 +1,285 @@
+{% extends "base.html" %}
+
+{% block title %}Production Reports{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">Production Reports</h1>
+            <p class="text-muted">Generate and view production team reports</p>
+        </div>
+        <div>
+            <a href="{{ url_for('productions.dashboard') }}" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Report Types -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <i class="fas fa-calendar-day fa-3x text-primary mb-3"></i>
+                    <h5 class="card-title">Daily Reports</h5>
+                    <p class="card-text">View daily performance reports for the production team</p>
+                    <a href="{{ url_for('productions.team_reports_daily') }}" class="btn btn-primary">
+                        <i class="fas fa-eye"></i> View Daily Reports
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <i class="fas fa-calendar-week fa-3x text-success mb-3"></i>
+                    <h5 class="card-title">Weekly Reports</h5>
+                    <p class="card-text">View weekly performance summaries and trends</p>
+                    <a href="{{ url_for('productions.team_reports_weekly') }}" class="btn btn-success">
+                        <i class="fas fa-eye"></i> View Weekly Reports
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <i class="fas fa-calendar-alt fa-3x text-info mb-3"></i>
+                    <h5 class="card-title">Monthly Reports</h5>
+                    <p class="card-text">View monthly performance analysis and insights</p>
+                    <a href="{{ url_for('productions.team_reports_monthly') }}" class="btn btn-info">
+                        <i class="fas fa-eye"></i> View Monthly Reports
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Reports Summary -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-line text-primary"></i> Recent Reports Summary
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <div class="border-end">
+                                <h3 class="text-primary">{{ recent_counts.daily }}</h3>
+                                <p class="text-muted mb-0">Daily Reports</p>
+                                <small class="text-muted">Last 7 days</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="border-end">
+                                <h3 class="text-success">{{ recent_counts.weekly }}</h3>
+                                <p class="text-muted mb-0">Weekly Reports</p>
+                                <small class="text-muted">Last 4 weeks</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="border-end">
+                                <h3 class="text-info">{{ recent_counts.monthly }}</h3>
+                                <p class="text-muted mb-0">Monthly Reports</p>
+                                <small class="text-muted">Last 3 months</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div>
+                                <h3 class="text-warning">{{ report_schedules|length }}</h3>
+                                <p class="text-muted mb-0">Scheduled Reports</p>
+                                <small class="text-muted">Active schedules</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Schedules -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-clock text-warning"></i> Report Schedules
+                    </h5>
+                    <button class="btn btn-primary btn-sm" onclick="createReportSchedule()">
+                        <i class="fas fa-plus"></i> New Schedule
+                    </button>
+                </div>
+                <div class="card-body">
+                    {% if report_schedules %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Schedule Name</th>
+                                        <th>Report Type</th>
+                                        <th>Frequency</th>
+                                        <th>Next Run</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for schedule in report_schedules %}
+                                    <tr>
+                                        <td>{{ schedule.name }}</td>
+                                        <td>
+                                            <span class="badge bg-primary">{{ schedule.report_type.title() }}</span>
+                                        </td>
+                                        <td>{{ schedule.frequency }}</td>
+                                        <td>{{ schedule.next_run.strftime('%Y-%m-%d %H:%M') if schedule.next_run else 'Not scheduled' }}</td>
+                                        <td>
+                                            {% if schedule.is_active %}
+                                                <span class="badge bg-success">Active</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">Inactive</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <button class="btn btn-outline-primary" onclick="editSchedule({{ schedule.id }})">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button class="btn btn-outline-danger" onclick="deleteSchedule({{ schedule.id }})">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-clock fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No report schedules found</h5>
+                            <p class="text-muted">Create a schedule to automatically generate reports</p>
+                            <button class="btn btn-primary" onclick="createReportSchedule()">
+                                <i class="fas fa-plus"></i> Create First Schedule
+                            </button>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="fas fa-download text-success"></i> Export Options
+                    </h5>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-success" onclick="exportReports('pdf')">
+                            <i class="fas fa-file-pdf"></i> Export PDF
+                        </button>
+                        <button class="btn btn-outline-primary" onclick="exportReports('excel')">
+                            <i class="fas fa-file-excel"></i> Export Excel
+                        </button>
+                        <button class="btn btn-outline-info" onclick="exportReports('csv')">
+                            <i class="fas fa-file-csv"></i> Export CSV
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="fas fa-cog text-warning"></i> Report Actions
+                    </h5>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-warning" onclick="generateAllReports()">
+                            <i class="fas fa-sync"></i> Generate All Reports
+                        </button>
+                        <button class="btn btn-outline-info" onclick="scheduleReports()">
+                            <i class="fas fa-calendar-plus"></i> Schedule Reports
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function exportReports(format) {
+    const url = `/productions/api/team-reports/export/${format}`;
+    window.open(url, '_blank');
+}
+
+function generateAllReports() {
+    if (confirm('Generate all reports for the current period? This may take a few minutes.')) {
+        fetch('/productions/api/team-reports/daily/generate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Reports generated successfully!');
+                location.reload();
+            } else {
+                alert('Error generating reports: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error generating reports');
+        });
+    }
+}
+
+function createReportSchedule() {
+    // Implementation for creating report schedule
+    alert('Create report schedule functionality will be implemented here');
+}
+
+function editSchedule(scheduleId) {
+    // Implementation for editing schedule
+    alert('Edit schedule functionality will be implemented here');
+}
+
+function deleteSchedule(scheduleId) {
+    if (confirm('Are you sure you want to delete this schedule?')) {
+        fetch(`/productions/api/team-reports/schedule/${scheduleId}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Schedule deleted successfully!');
+                location.reload();
+            } else {
+                alert('Error deleting schedule: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error deleting schedule');
+        });
+    }
+}
+
+function scheduleReports() {
+    // Implementation for scheduling reports
+    alert('Schedule reports functionality will be implemented here');
+}
+</script>
+{% endblock %} 

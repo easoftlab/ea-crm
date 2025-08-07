@@ -1,0 +1,612 @@
+{% extends 'base.html' %}
+{% block title %}Converted / On Board Clients{% endblock %}
+{% block content %}
+<!-- Header & Navigation -->
+<div class="d-flex justify-content-between align-items-center mt-4 mb-3">
+  <div>
+    <h2 class="mb-0"><span>🏆</span> Converted Clients</h2>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Converted Clients</li>
+      </ol>
+    </nav>
+  </div>
+  <div>
+    {% if current_user.has_permission('admin') %}
+    <a href="{{ url_for('main.api_reports_export') }}" class="btn btn-outline-success me-2">
+      <i class="bi bi-download"></i> Export CSV
+    </a>
+    {% endif %}
+    <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> Back to Dashboard
+    </a>
+  </div>
+</div>
+<!-- End Header & Navigation -->
+<!-- Summary Cards (Top Row) -->
+<div class="row mb-4">
+  <div class="col-md-4 mb-3 mb-md-0">
+    <div class="card shadow-sm h-100">
+      <div class="card-body d-flex align-items-center">
+        <span class="fs-2 me-3">🏆</span>
+        <div>
+          <h6 class="card-title mb-1">Total Converted</h6>
+          <h4 class="mb-0">{{ total_converted }}</h4>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4 mb-3 mb-md-0">
+    <div class="card shadow-sm h-100">
+      <div class="card-body d-flex align-items-center">
+        <span class="fs-2 me-3">📈</span>
+        <div>
+          <h6 class="card-title mb-1">Conversion Rate</h6>
+          <h4 class="mb-0">{{ conversion_rate }}%</h4>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card shadow-sm h-100">
+      <div class="card-body d-flex align-items-center">
+        <span class="fs-2 me-3">🕒</span>
+        <div>
+          <h6 class="card-title mb-1">Recent Conversions</h6>
+          <h4 class="mb-0">{{ recent_conversions }}</h4>
+          <small class="text-muted">(This week)</small>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- End Summary Cards -->
+<!-- Filter & Search Bar -->
+<form method="get" class="mb-4">
+  <div class="row g-2 align-items-end">
+    <div class="col-md-4">
+      <label for="search" class="form-label mb-0">Search</label>
+      <input type="text" class="form-control" id="search" name="search" placeholder="Name, Company, Email, Phone" value="{{ request.args.get('search', '') }}">
+    </div>
+    <div class="col-md-3">
+      <label for="industry" class="form-label mb-0">Industry</label>
+      <select class="form-select" id="industry" name="industry">
+        <option value="">All</option>
+        {% for ind in industries %}
+          <option value="{{ ind }}" {% if request.args.get('industry') == ind %}selected{% endif %}>{{ ind }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3">
+      <label for="country" class="form-label mb-0">Country</label>
+      <select class="form-select" id="country" name="country">
+        <option value="">All</option>
+        {% for c in countries %}
+          <option value="{{ c }}" {% if request.args.get('country') == c %}selected{% endif %}>{{ c }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2 d-grid">
+      <button type="submit" class="btn btn-primary"><i class="bi bi-search"></i> Filter</button>
+    </div>
+  </div>
+</form>
+<!-- End Filter & Search Bar -->
+<div class="table-responsive">
+  <table class="table table-striped table-hover align-middle">
+    <thead class="table-light">
+      <tr>
+        <th><span>🏢</span> Company</th>
+        <th><span>🌍</span> Country/State</th>
+        <th><span>🏷️</span> Industry</th>
+        <th><span>👤</span> Contact</th>
+        <th><span>💼</span> Position</th>
+        <th><span>📞</span> Phone</th>
+        <th><span>✉️</span> Email</th>
+        <th><span>🟢</span> Status</th>
+        <th><span>📅</span> Follow-up</th>
+      </tr>
+    </thead>
+    <tbody id="converted-table-body" class="accordion" data-bs-parent="#converted-table-body">
+      {% for lead in leads %}
+      <tr data-bs-toggle="collapse" data-bs-target="#details-{{ lead.id }}" aria-expanded="false" aria-controls="details-{{ lead.id }}" style="cursor:pointer;">
+        <td><strong>{{ lead.company_name }}</strong></td>
+        <td>{% if lead.country == 'USA' %}USA, {{ lead.state }}{% else %}{{ lead.country }}{% endif %}</td>
+        <td><span class="badge bg-secondary">{{ lead.industry }}</span></td>
+        <td>{% if lead.contacts and lead.contacts|length > 0 %}{{ lead.contacts[0].name }}{% else %}<span class="text-muted">-</span>{% endif %}</td>
+        <td>{% if lead.contacts and lead.contacts|length > 0 %}{{ lead.contacts[0].position }}{% else %}<span class="text-muted">-</span>{% endif %}</td>
+        <td class="copy-on-click" data-copy="{% if lead.contacts and lead.contacts[0].phones and lead.contacts[0].phones|length > 0 %}{{ lead.contacts[0].phones[0] }}{% endif %}">{% if lead.contacts and lead.contacts[0].phones and lead.contacts[0].phones|length > 0 %}{{ lead.contacts[0].phones[0] }}{% else %}<span class="text-muted">-</span>{% endif %}</td>
+        <td class="copy-on-click" data-copy="{% if lead.contacts and lead.contacts[0].emails and lead.contacts[0].emails|length > 0 %}{{ lead.contacts[0].emails[0] }}{% endif %}">{% if lead.contacts and lead.contacts[0].emails and lead.contacts[0].emails|length > 0 %}{{ lead.contacts[0].emails[0] }}{% else %}<span class="text-muted">-</span>{% endif %}</td>
+        <td>
+          <span class="align-middle" style="color: #28a745; font-size: 1.2em; vertical-align: middle;">●</span>
+          <span class="badge bg-success align-middle">{{ lead.status }}</span>
+        </td>
+        <td><span class="main-row-followup" data-lead-id="{{ lead.id }}">{% if lead.followup_date %}{{ lead.followup_date }}{% else %}-{% endif %}</span></td>
+      </tr>
+      <tr class="collapse bg-light" id="details-{{ lead.id }}" data-bs-parent="#converted-table-body">
+        <td colspan="9">
+          <div class="p-3 lead-details-editable" data-lead-id="{{ lead.id }}" style="border:2px dashed #f39c12;">
+            <div class="row">
+              <div class="col-md-4 mb-2">
+                <strong>Company Website:</strong>
+                <span>{{ lead.company_website }}</span>
+                <a href="{{ lead.company_website }}" target="_blank" rel="noopener" class="ms-1 website-link" title="Open website">🔗</a>
+                <div class="mt-1"><span class="badge bg-secondary">{{ lead.source }}</span></div>
+                <div class="mt-1"><span class="badge bg-secondary">{{ lead.industry }}</span></div>
+              </div>
+              <div class="col-md-4 mb-2">
+                <strong>Notes:</strong>
+                <span class="editable-notes truncate-notes" data-lead-id="{{ lead.id }}">{{ lead.notes if lead.notes else 'Click to add notes' }}</span>
+                {% if lead.notes and lead.notes|length > 200 %}
+                  <span class="read-more-link" data-lead-id="{{ lead.id }}">Read more…</span>
+                {% endif %}
+                <textarea class="form-control form-control-sm edit-notes-textarea d-none mt-2" data-lead-id="{{ lead.id }}" rows="3">{{ lead.notes }}</textarea>
+              </div>
+              <div class="col-md-4 mb-2">
+                <strong>Created:</strong> {{ lead.created_at }}<br>
+                <strong>Updated:</strong> {{ lead.updated_at }}<br>
+                <strong>Follow-up:</strong>
+                <span class="editable-followup" data-lead-id="{{ lead.id }}">{{ lead.followup_date if lead.followup_date else 'Click to set follow-up' }}</span>
+                <input type="text" class="form-control form-control-sm edit-followup-input d-none mt-2" data-lead-id="{{ lead.id }}" value="{{ lead.followup_date if lead.followup_date else '' }}" placeholder="YYYY-MM-DD" autocomplete="off">
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-12">
+                <strong>All Contacts:</strong>
+                <ul class="list-unstyled mb-0 display-contacts" data-lead-id="{{ lead.id }}">
+                  {% for contact in lead.contacts %}
+                  <div class="row">
+                    <div class="col-md-4 mb-2">
+                      <span class="fw-bold">{{ contact.name }}</span> ({{ contact.position }})<br>
+                      {% for phone in contact.phones %}
+                        <span class="me-2 copy-phone">{{ phone }}</span>
+                      {% endfor %}
+                      {% for email in contact.emails %}
+                        <span class="me-2 copy-email">{{ email }}</span>
+                      {% endfor %}
+                      {% for social in contact.socials %}
+                        <span class="me-2"><a href="{{ social.url }}" target="_blank">{{ social.type }}</a></span>
+                      {% endfor %}
+                    </div>
+                  </div>
+                  {% endfor %}
+                </ul>
+              </div>
+            </div>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Toast for copy-to-clipboard -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+  <div id="copyToast" class="toast align-items-center text-bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+    <div class="d-flex">
+      <div class="toast-body">
+        Copied to clipboard!
+      </div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+    </div>
+  </div>
+</div>
+<!-- End Toast -->
+
+<!-- Notes Modal -->
+<div class="modal fade" id="notesModal" tabindex="-1" aria-labelledby="notesModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="notesModalLabel">Full Notes</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <textarea id="modal-notes-textarea" class="form-control" rows="10"></textarea>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary" id="save-notes-modal">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- End Notes Modal -->
+
+<style>
+.truncate-notes {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-height: 4.5em;
+  white-space: pre-line;
+}
+.read-more-link {
+  color: #0d6efd;
+  cursor: pointer;
+  text-decoration: underline;
+  font-size: 0.95em;
+}
+</style>
+
+<!-- Choices.js and Flatpickr includes (if not already in layout) -->
+<script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
+<script>
+// Enable Bootstrap tooltips
+var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+  return new bootstrap.Tooltip(tooltipTriggerEl);
+});
+
+// Copy-to-clipboard functionality with toast feedback
+const copyBtns = document.querySelectorAll('.copy-on-click');
+const copyToastEl = document.getElementById('copyToast');
+const copyToast = copyToastEl ? new bootstrap.Toast(copyToastEl) : null;
+copyBtns.forEach(btn => {
+  btn.addEventListener('click', function(e) {
+    const text = this.getAttribute('data-copy');
+    navigator.clipboard.writeText(text);
+    if (copyToast) copyToast.show();
+    this.setAttribute('title', 'Copied!');
+    this.classList.add('btn-success');
+    setTimeout(() => {
+      this.setAttribute('title', 'Copy to clipboard');
+      this.classList.remove('btn-success');
+    }, 1200);
+  });
+  btn.addEventListener('blur', function() {
+    this.setAttribute('title', 'Copy to clipboard');
+    this.classList.remove('btn-success');
+  });
+  btn.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      this.click();
+    }
+  });
+});
+
+// Handle accordion expansion/collapse
+document.addEventListener('DOMContentLoaded', function() {
+  const accordionItems = document.querySelectorAll('.accordion-item');
+  accordionItems.forEach(item => {
+    item.addEventListener('show.bs.collapse', function() {
+      const collapseTarget = this.querySelector('.collapse');
+      if (collapseTarget) {
+        collapseTarget.classList.add('show');
+      }
+    });
+    item.addEventListener('hidden.bs.collapse', function() {
+      const collapseTarget = this.querySelector('.collapse');
+      if (collapseTarget) {
+        collapseTarget.classList.remove('show');
+      }
+    });
+  });
+});
+
+// Handle editable fields
+document.addEventListener('DOMContentLoaded', function() {
+  const editableNotes = document.querySelectorAll('.editable-notes');
+  const editNotesTextareas = document.querySelectorAll('.edit-notes-textarea');
+  const editableFollowup = document.querySelectorAll('.editable-followup');
+  const editFollowupInputs = document.querySelectorAll('.edit-followup-input');
+
+  editableNotes.forEach(span => {
+    span.addEventListener('click', function() {
+      const leadId = this.getAttribute('data-lead-id');
+      const textarea = document.querySelector(`.edit-notes-textarea[data-lead-id="${leadId}"]`);
+      if (textarea) {
+        textarea.classList.remove('d-none');
+        this.classList.add('d-none');
+        textarea.focus();
+      }
+    });
+  });
+
+  editNotesTextareas.forEach(textarea => {
+    textarea.addEventListener('blur', function() {
+      const leadId = this.getAttribute('data-lead-id');
+      const span = document.querySelector(`.editable-notes[data-lead-id="${leadId}"]`);
+      if (span) {
+        span.textContent = this.value;
+        span.classList.remove('d-none');
+        this.classList.add('d-none');
+      }
+    });
+  });
+
+  editableFollowup.forEach(span => {
+    span.addEventListener('click', function() {
+      const leadId = this.getAttribute('data-lead-id');
+      const input = document.querySelector(`.edit-followup-input[data-lead-id="${leadId}"]`);
+      if (input) {
+        input.classList.remove('d-none');
+        this.classList.add('d-none');
+        input.focus();
+      }
+    });
+  });
+
+  editFollowupInputs.forEach(input => {
+    input.addEventListener('blur', function() {
+      const leadId = this.getAttribute('data-lead-id');
+      const span = document.querySelector(`.editable-followup[data-lead-id="${leadId}"]`);
+      if (span) {
+        span.textContent = this.value;
+        span.classList.remove('d-none');
+        this.classList.add('d-none');
+      }
+    });
+  });
+});
+
+// Handle main row follow-up date updates
+document.addEventListener('DOMContentLoaded', function() {
+  const mainRowFollowupSpans = document.querySelectorAll('.main-row-followup');
+  mainRowFollowupSpans.forEach(span => {
+    span.addEventListener('click', function() {
+      const leadId = this.getAttribute('data-lead-id');
+      const input = document.querySelector(`.edit-followup-input[data-lead-id="${leadId}"]`);
+      if (input) {
+        input.classList.remove('d-none');
+        this.classList.add('d-none');
+        input.focus();
+      }
+    });
+  });
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+  // Choices.js for filters
+  if (document.getElementById('industry')) {
+    new Choices('#industry', { removeItemButton: true, allowHTML: false, addItems: true, duplicateItemsAllowed: false, allowAddItem: true, placeholder: true, placeholderValue: 'Industry' });
+  }
+  if (document.getElementById('country')) {
+    new Choices('#country', { removeItemButton: true, allowHTML: false, addItems: true, duplicateItemsAllowed: false, allowAddItem: true, placeholder: true, placeholderValue: 'Country' });
+  }
+
+  // Flatpickr for follow-up editing
+  document.querySelectorAll('.edit-followup-input').forEach(function(input) {
+    if (!input._flatpickr) {
+      flatpickr(input, {
+        dateFormat: 'Y-m-d',
+        allowInput: true,
+        defaultDate: input.value || new Date(),
+        minDate: 'today'
+      });
+    }
+  });
+
+  // AJAX save for notes and follow-up
+  document.querySelectorAll('.edit-notes-textarea').forEach(function(textarea) {
+    textarea.addEventListener('blur', function() {
+      const leadId = this.getAttribute('data-lead-id');
+      const value = this.value;
+      fetch('/update_lead', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `lead_id=${encodeURIComponent(leadId)}&notes=${encodeURIComponent(value)}&csrf_token={{ csrf_token() }}`
+      }).then(resp => resp.json()).then(data => {
+        // Optionally show a toast or update UI
+      });
+    });
+  });
+  document.querySelectorAll('.edit-followup-input').forEach(function(input) {
+    input.addEventListener('blur', function() {
+      const leadId = this.getAttribute('data-lead-id');
+      const value = this.value;
+      fetch('/update_lead', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `lead_id=${encodeURIComponent(leadId)}&followup_date=${encodeURIComponent(value)}&csrf_token={{ csrf_token() }}`
+      }).then(resp => resp.json()).then(data => {
+        // Optionally show a toast or update UI
+      });
+    });
+  });
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+  // AJAX filtering for converted clients
+  function renderLeadRow(lead) {
+    let contact = lead.contacts[0] || {name: '', position: '', phones: [], emails: []};
+    let phone = contact.phones[0] || '';
+    let email = contact.emails[0] || '';
+    let mainRow = `
+      <tr data-bs-toggle="collapse" data-bs-target="#details-${lead.id}" aria-expanded="false" aria-controls="details-${lead.id}" style="cursor:pointer;">
+        <td><strong>${lead.company_name}</strong></td>
+        <td>${lead.country}${lead.state ? ', ' + lead.state : ''}</td>
+        <td><span class="badge bg-secondary">${lead.industry}</span></td>
+        <td>${contact.name}</td>
+        <td>${contact.position || ''}</td>
+        <td class="copy-on-click" data-copy="${phone}">${phone || '<span class=\'text-muted\'>-</span>'}</td>
+        <td class="copy-on-click" data-copy="${email}">${email || '<span class=\'text-muted\'>-</span>'}</td>
+        <td>
+          <span class="align-middle" style="color: #28a745; font-size: 1.2em; vertical-align: middle;">●</span>
+          <span class="badge bg-success align-middle">${lead.status}</span>
+        </td>
+        <td><span class="main-row-followup" data-lead-id="${lead.id}">${lead.followup_date || '-'}</span></td>
+      </tr>
+      <tr class="collapse bg-light" id="details-${lead.id}" data-bs-parent="#converted-table-body">
+        <td colspan="9">
+          <div class="p-3 lead-details-editable" data-lead-id="${lead.id}" style="border:2px dashed #f39c12;">
+            <div class="row">
+              <div class="col-md-4 mb-2">
+                <strong>Company Website:</strong>
+                <span>${lead.company_website}</span>
+                <a href="${lead.company_website}" target="_blank" rel="noopener" class="ms-1 website-link" title="Open website">🔗</a>
+                <div class="mt-1"><span class="badge bg-secondary">${lead.source}</span></div>
+                <div class="mt-1"><span class="badge bg-secondary">${lead.industry}</span></div>
+              </div>
+              <div class="col-md-4 mb-2">
+                <strong>Notes:</strong>
+                                 ${lead.notes ? `<span class="editable-notes truncate-notes" data-lead-id="${lead.id}">${lead.notes}</span>` : ''}
+                ${lead.notes && lead.notes.length > 200 ? `<span class="read-more-link" data-lead-id="${lead.id}">Read more…</span>` : ''}
+                <textarea class="form-control form-control-sm edit-notes-textarea d-none mt-2" data-lead-id="${lead.id}" rows="3">${lead.notes || ''}</textarea>
+              </div>
+              <div class="col-md-4 mb-2">
+                <strong>Created:</strong> ${lead.created_at}<br>
+                <strong>Updated:</strong> ${lead.updated_at}<br>
+                <strong>Follow-up:</strong>
+                                 ${lead.followup_date ? `<span class="editable-followup" data-lead-id="${lead.id}">${lead.followup_date}</span>` : ''}
+                <input type="text" class="form-control form-control-sm edit-followup-input d-none mt-2" data-lead-id="${lead.id}" value="${lead.followup_date || ''}" placeholder="YYYY-MM-DD" autocomplete="off">
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-12">
+                <strong>All Contacts:</strong>
+                <ul class="list-unstyled mb-0 display-contacts" data-lead-id="${lead.id}">
+                  ${lead.contacts.map(c => `
+                    <div class="row">
+                      <div class="col-md-4 mb-2">
+                        <span class="fw-bold">${c.name}</span> (${c.position || ''})<br>
+                        ${c.phones.map(p => `<span class="me-2 copy-on-click" data-copy="${p}">${p}</span>`).join('')}
+                        ${c.emails.map(e => `<span class="me-2 copy-on-click" data-copy="${e}">${e}</span>`).join('')}
+                        ${c.socials.map(s => `<span class="me-2"><a href="${s.url}" target="_blank">${s.type || 'Social'}</a></span>`).join('')}
+                      </div>
+                    </div>`).join('')}
+                </ul>
+                <div class="mt-2">
+                  <strong>Status:</strong>
+                  <select class="form-select form-select-sm status-dropdown d-inline w-auto" data-lead-id="${lead.id}">
+                    <option value="Converted" ${lead.status === 'Converted' ? 'selected' : ''}>Converted</option>
+                    <option value="On Board Clients" ${lead.status === 'On Board Clients' ? 'selected' : ''}>On Board Clients</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        </td>
+      </tr>`;
+    return mainRow;
+  }
+
+  function fetchAndRenderLeads() {
+    const params = new URLSearchParams(new FormData(document.querySelector('form')));
+    const tbody = document.getElementById('converted-table-body');
+    tbody.innerHTML = '<tr><td colspan="9" class="text-center">Loading...</td></tr>';
+    fetch('/ajax_search_converted?' + params.toString())
+      .then(res => res.json())
+      .then(data => {
+        if (data.leads.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="9" class="text-center">No converted clients found.</td></tr>';
+        } else {
+          tbody.innerHTML = data.leads.map(renderLeadRow).join('');
+          attachInlineEvents();
+        }
+      });
+  }
+
+  // Attach filter events
+  document.querySelectorAll('form select, form input').forEach(function(el) {
+    el.addEventListener('change', fetchAndRenderLeads);
+    el.addEventListener('input', fetchAndRenderLeads);
+  });
+  document.querySelector('form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    fetchAndRenderLeads();
+  });
+
+  // Inline editing and copy events
+  function attachInlineEvents() {
+    // Copy-on-click for all phones/emails
+    document.querySelectorAll('.copy-on-click').forEach(function(el) {
+      el.style.cursor = 'pointer';
+      el.title = 'Click to copy';
+      el.addEventListener('click', function(e) {
+        const text = el.getAttribute('data-copy');
+        if (text) {
+          navigator.clipboard.writeText(text);
+          el.classList.add('bg-success', 'text-white');
+          el.title = 'Copied!';
+          setTimeout(function() {
+            el.classList.remove('bg-success', 'text-white');
+            el.title = 'Click to copy';
+          }, 1000);
+        }
+      });
+    });
+    // Inline status dropdown AJAX
+    document.querySelectorAll('.status-dropdown').forEach(function(drop) {
+      drop.addEventListener('change', function(e) {
+        const leadId = this.getAttribute('data-lead-id');
+        const newStatus = this.value;
+        fetch('/update_lead', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: `lead_id=${encodeURIComponent(leadId)}&status=${encodeURIComponent(newStatus)}&csrf_token={{ csrf_token() }}`
+        }).then(resp => resp.json()).then(data => {
+          showCopyToast('Status updated!');
+        });
+      });
+    });
+    // Inline notes/follow-up AJAX (already handled on blur)
+    // Flatpickr for new follow-up inputs
+    document.querySelectorAll('.edit-followup-input').forEach(function(input) {
+      if (!input._flatpickr) {
+        flatpickr(input, {
+          dateFormat: 'Y-m-d',
+          allowInput: true,
+          defaultDate: input.value || new Date(),
+          minDate: 'today'
+        });
+      }
+    });
+  }
+
+  // Show toast for AJAX feedback
+  function showCopyToast(msg) {
+    let toast = document.createElement('div');
+    toast.className = 'alert alert-success position-fixed bottom-0 end-0 m-3';
+    toast.textContent = msg;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 1500);
+  }
+
+  // Initial fetch
+  fetchAndRenderLeads();
+  // Attach inline events after initial render
+  setTimeout(attachInlineEvents, 100); // Ensure DOM is ready
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+  // Read more modal logic
+  let currentNotesLeadId = null;
+  document.querySelectorAll('.read-more-link').forEach(function(link) {
+    link.addEventListener('click', function() {
+      currentNotesLeadId = this.getAttribute('data-lead-id');
+      const notesSpan = document.querySelector(`.editable-notes[data-lead-id="${currentNotesLeadId}"]`);
+      document.getElementById('modal-notes-textarea').value = notesSpan ? notesSpan.textContent : '';
+      const modal = new bootstrap.Modal(document.getElementById('notesModal'));
+      modal.show();
+    });
+  });
+  document.getElementById('save-notes-modal').addEventListener('click', function() {
+    const newNotes = document.getElementById('modal-notes-textarea').value;
+    if (currentNotesLeadId) {
+      fetch('/update_lead', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `lead_id=${encodeURIComponent(currentNotesLeadId)}&notes=${encodeURIComponent(newNotes)}&csrf_token={{ csrf_token() }}`
+      }).then(resp => resp.json()).then(data => {
+        // Update the main view
+        const notesSpan = document.querySelector(`.editable-notes[data-lead-id="${currentNotesLeadId}"]`);
+        if (notesSpan) notesSpan.textContent = newNotes;
+        // Optionally close modal and show toast
+        bootstrap.Modal.getInstance(document.getElementById('notesModal')).hide();
+        showCopyToast('Notes updated!');
+      });
+    }
+  });
+});
+</script>
+{% endblock %} 

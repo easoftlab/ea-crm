@@ -1,0 +1,15 @@
+flask
+flask-wtf
+wtforms
+flask-sqlalchemy 
+flask-login
+python-dotenv
+fuzzywuzzy
+python-Levenshtein
+selenium
+spacy
+pandas
+openpyxl
+networkx
+scikit-learn
+numpy 

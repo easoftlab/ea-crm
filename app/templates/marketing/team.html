@@ -1,0 +1,260 @@
+{% extends "base.html" %}
+{% block title %}Marketing Team Management{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">Marketing Team Management</h1>
+            <p class="text-muted">Manage and monitor your marketing team performance</p>
+        </div>
+        <div>
+            <a href="{{ url_for('marketing.dashboard') }}" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Team Overview -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="fas fa-users text-primary"></i> Team Overview
+                    </h5>
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="text-center">
+                                <h3 class="text-primary">{{ member_performance|length }}</h3>
+                                <small class="text-muted">Team Members</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center">
+                                <h3 class="text-success">{{ member_performance|selectattr('daily')|list|length }}</h3>
+                                <small class="text-muted">Active Today</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="fas fa-chart-line text-success"></i> Today's Performance
+                    </h5>
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="text-center">
+                                <h3 class="text-success">{{ member_performance|selectattr('daily')|sum(attribute='daily.leads_created') if member_performance else 0 }}</h3>
+                                <small class="text-muted">Leads Created</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center">
+                                <h3 class="text-info">{{ member_performance|selectattr('daily')|sum(attribute='daily.calls_made') if member_performance else 0 }}</h3>
+                                <small class="text-muted">Calls Made</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Team Members Performance -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-user-friends"></i> Team Members Performance
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if member_performance %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Member</th>
+                            <th>Today's Leads</th>
+                            <th>Today's Calls</th>
+                            <th>Weekly Leads</th>
+                            <th>Weekly Calls</th>
+                            <th>Productivity Score</th>
+                            <th>Goal Completion</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for member in member_performance %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <img src="{{ member.user.get_profile_image_url() }}" 
+                                         class="rounded-circle me-2" 
+                                         width="32" height="32" 
+                                         alt="{{ member.user.get_full_name() }}">
+                                    <div>
+                                        <div class="fw-bold">{{ member.user.get_full_name() }}</div>
+                                        <small class="text-muted">{{ member.user.username }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge bg-primary">{{ member.daily.leads_created if member.daily else 0 }}</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-info">{{ member.daily.calls_made if member.daily else 0 }}</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-success">{{ member.weekly.total_leads_created if member.weekly else 0 }}</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-warning">{{ member.weekly.total_calls_made if member.weekly else 0 }}</span>
+                            </td>
+                            <td>
+                                {% set score = member.productivity_score %}
+                                {% if score >= 80 %}
+                                    <span class="badge bg-success">{{ "%.0f"|format(score) }}%</span>
+                                {% elif score >= 60 %}
+                                    <span class="badge bg-warning">{{ "%.0f"|format(score) }}%</span>
+                                {% else %}
+                                    <span class="badge bg-danger">{{ "%.0f"|format(score) }}%</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% set completion = member.goal_completion %}
+                                {% if completion >= 100 %}
+                                    <span class="badge bg-success">{{ "%.0f"|format(completion) }}%</span>
+                                {% elif completion >= 80 %}
+                                    <span class="badge bg-warning">{{ "%.0f"|format(completion) }}%</span>
+                                {% else %}
+                                    <span class="badge bg-danger">{{ "%.0f"|format(completion) }}%</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{{ url_for('marketing.team_member_report', member_id=member.user.id) }}" 
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-chart-bar"></i> Report
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary">
+                                        <i class="fas fa-envelope"></i> Message
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No team members found</h5>
+                <p class="text-muted">Add team members to start tracking performance</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Performance Charts -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-pie"></i> Productivity Distribution
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="productivityChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-bar"></i> Weekly Performance Trend
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="weeklyTrendChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Productivity Distribution Chart
+const productivityCtx = document.getElementById('productivityChart').getContext('2d');
+const productivityChart = new Chart(productivityCtx, {
+    type: 'doughnut',
+    data: {
+        labels: ['High Performers (80%+)', 'Good Performers (60-79%)', 'Needs Improvement (<60%)'],
+        datasets: [{
+            data: [
+                {{ member_performance|selectattr('productivity_score', '>=', 80)|list|length }},
+                {{ member_performance|selectattr('productivity_score', '>=', 60)|selectattr('productivity_score', '<', 80)|list|length }},
+                {{ member_performance|selectattr('productivity_score', '<', 60)|list|length }}
+            ],
+            backgroundColor: ['#28a745', '#ffc107', '#dc3545'],
+            borderWidth: 2,
+            borderColor: '#fff'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+
+// Weekly Performance Trend Chart
+const weeklyCtx = document.getElementById('weeklyTrendChart').getContext('2d');
+const weeklyChart = new Chart(weeklyCtx, {
+    type: 'bar',
+    data: {
+        labels: [{% for member in member_performance %}'{{ member.user.get_full_name() }}'{% if not loop.last %}, {% endif %}{% endfor %}],
+        datasets: [{
+            label: 'Weekly Leads',
+            data: [{% for member in member_performance %}{{ member.weekly.total_leads_created if member.weekly else 0 }}{% if not loop.last %}, {% endif %}{% endfor %}],
+            backgroundColor: 'rgba(40, 167, 69, 0.7)',
+            borderColor: 'rgba(40, 167, 69, 1)',
+            borderWidth: 1
+        }, {
+            label: 'Weekly Calls',
+            data: [{% for member in member_performance %}{{ member.weekly.total_calls_made if member.weekly else 0 }}{% if not loop.last %}, {% endif %}{% endfor %}],
+            backgroundColor: 'rgba(23, 162, 184, 0.7)',
+            borderColor: 'rgba(23, 162, 184, 1)',
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        },
+        plugins: {
+            legend: {
+                position: 'top'
+            }
+        }
+    }
+});
+</script>
+{% endblock %} 

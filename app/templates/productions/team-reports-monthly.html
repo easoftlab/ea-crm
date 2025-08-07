@@ -1,0 +1,427 @@
+{% extends "base.html" %}
+
+{% block title %}Monthly Team Reports - Productions{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">Monthly Team Reports</h1>
+            <p class="text-muted">Production team monthly performance reports</p>
+        </div>
+        <div>
+            <a href="{{ url_for('productions.team_reports') }}" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left"></i> Back to Reports
+            </a>
+        </div>
+    </div>
+
+    <!-- Month Filter -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <form method="GET" class="d-flex gap-2">
+                        <div class="flex-grow-1">
+                            <label for="month" class="form-label">Select Month</label>
+                            <input type="month" class="form-control" id="month" name="month" 
+                                   value="{{ report_month }}" onchange="this.form.submit()">
+                        </div>
+                        <div class="d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search"></i> Filter
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="fas fa-calendar-alt text-primary"></i> Monthly Summary
+                    </h5>
+                    <div class="row text-center">
+                        <div class="col-3">
+                            <h4 class="text-primary">{{ monthly_stats.total_members }}</h4>
+                            <small class="text-muted">Team Members</small>
+                        </div>
+                        <div class="col-3">
+                            <h4 class="text-success">{{ monthly_stats.total_tasks }}</h4>
+                            <small class="text-muted">Tasks Completed</small>
+                        </div>
+                        <div class="col-3">
+                            <h4 class="text-info">{{ monthly_stats.avg_productivity }}%</h4>
+                            <small class="text-muted">Avg Productivity</small>
+                        </div>
+                        <div class="col-3">
+                            <h4 class="text-warning">{{ monthly_stats.total_hours }}h</h4>
+                            <small class="text-muted">Total Hours</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Monthly Performance Charts -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-line text-success"></i> Monthly Productivity Trend
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="productivityChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-bar text-primary"></i> Task Completion Distribution
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="taskChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Team Members Monthly Reports -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-users text-primary"></i> 
+                        Monthly Reports for {{ report_month_start.strftime('%B %Y') }}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if monthly_reports %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Team Member</th>
+                                        <th>Tasks Completed</th>
+                                        <th>Hours Worked</th>
+                                        <th>Productivity Score</th>
+                                        <th>Monthly Trend</th>
+                                        <th>Performance Rating</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for member_data in monthly_reports %}
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <img src="{{ member_data.user.get_profile_image_url() }}" 
+                                                     class="rounded-circle me-2" 
+                                                     width="32" height="32" 
+                                                     alt="{{ member_data.user.get_full_name() }}">
+                                                <div>
+                                                    <div class="fw-bold">{{ member_data.user.get_full_name() }}</div>
+                                                    <small class="text-muted">{{ member_data.user.username }}</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-primary">{{ member_data.tasks_completed }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="text-success">{{ (member_data.hours_worked) | round(1) }}h</span>
+                                        </td>
+                                        <td>
+                                            {% set score = member_data.productivity_score %}
+                                            {% if score >= 80 %}
+                                                <span class="badge bg-success">{{ score }}%</span>
+                                            {% elif score >= 60 %}
+                                                <span class="badge bg-warning">{{ score }}%</span>
+                                            {% else %}
+                                                <span class="badge bg-danger">{{ score }}%</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if member_data.trend == 'up' %}
+                                                <span class="text-success">
+                                                    <i class="fas fa-arrow-up"></i> Improving
+                                                </span>
+                                            {% elif member_data.trend == 'down' %}
+                                                <span class="text-danger">
+                                                    <i class="fas fa-arrow-down"></i> Declining
+                                                </span>
+                                            {% else %}
+                                                <span class="text-muted">
+                                                    <i class="fas fa-minus"></i> Stable
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% set rating = member_data.performance_rating %}
+                                            {% if rating == 'excellent' %}
+                                                <span class="badge bg-success">Excellent</span>
+                                            {% elif rating == 'good' %}
+                                                <span class="badge bg-primary">Good</span>
+                                            {% elif rating == 'average' %}
+                                                <span class="badge bg-warning">Average</span>
+                                            {% elif rating == 'needs_improvement' %}
+                                                <span class="badge bg-danger">Needs Improvement</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">Not Rated</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <a href="{{ url_for('productions.team_member_report', member_id=member_data.user.id) }}?month={{ report_month }}" 
+                                               class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye"></i> View Details
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No monthly reports found</h5>
+                            <p class="text-muted">Monthly reports will appear here once team members submit their reports.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Monthly Insights -->
+    <div class="row mt-4">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-trophy text-warning"></i> Top Performers
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if top_performers %}
+                        {% for performer in top_performers %}
+                        <div class="d-flex align-items-center mb-2">
+                            <img src="{{ performer.user.get_profile_image_url() }}" 
+                                 class="rounded-circle me-2" 
+                                 width="24" height="24" 
+                                 alt="{{ performer.user.get_full_name() }}">
+                            <div class="flex-grow-1">
+                                <div class="fw-bold">{{ performer.user.get_full_name() }}</div>
+                                <small class="text-muted">{{ performer.productivity_score }}% productivity</small>
+                            </div>
+                            <span class="badge bg-warning">{{ loop.index }}</span>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted text-center">No top performers data available</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-pie text-info"></i> Team Insights
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span>Average Productivity</span>
+                            <span class="fw-bold">{{ monthly_stats.avg_productivity }}%</span>
+                        </div>
+                        <div class="progress mt-1">
+                            <div class="progress-bar bg-success" style="width: {{ monthly_stats.avg_productivity }}%"></div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span>Task Completion Rate</span>
+                            <span class="fw-bold">{{ monthly_stats.task_completion_rate }}%</span>
+                        </div>
+                        <div class="progress mt-1">
+                            <div class="progress-bar bg-primary" style="width: {{ monthly_stats.task_completion_rate }}%"></div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span>Team Efficiency</span>
+                            <span class="fw-bold">{{ monthly_stats.team_efficiency }}%</span>
+                        </div>
+                        <div class="progress mt-1">
+                            <div class="progress-bar bg-info" style="width: {{ monthly_stats.team_efficiency }}%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-lightbulb text-success"></i> Recommendations
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if recommendations %}
+                        {% for recommendation in recommendations %}
+                        <div class="alert alert-info alert-sm mb-2">
+                            <i class="fas fa-lightbulb me-2"></i>
+                            {{ recommendation }}
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted text-center">No recommendations available</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="fas fa-download text-success"></i> Export Options
+                    </h5>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-success" onclick="exportMonthlyReports('pdf')">
+                            <i class="fas fa-file-pdf"></i> Export PDF
+                        </button>
+                        <button class="btn btn-outline-primary" onclick="exportMonthlyReports('excel')">
+                            <i class="fas fa-file-excel"></i> Export Excel
+                        </button>
+                        <button class="btn btn-outline-info" onclick="exportMonthlyReports('csv')">
+                            <i class="fas fa-file-csv"></i> Export CSV
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="fas fa-cog text-warning"></i> Report Actions
+                    </h5>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-warning" onclick="generateMonthlyReports()">
+                            <i class="fas fa-sync"></i> Generate Reports
+                        </button>
+                        <button class="btn btn-outline-info" onclick="scheduleMonthlyReports()">
+                            <i class="fas fa-calendar-plus"></i> Schedule Reports
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Monthly productivity chart
+const productivityCtx = document.getElementById('productivityChart').getContext('2d');
+const productivityChart = new Chart(productivityCtx, {
+    type: 'line',
+    data: {
+        labels: {{ productivity_chart_labels | tojson }},
+        datasets: [{
+            label: 'Productivity Score',
+            data: {{ productivity_chart_data | tojson }},
+            borderColor: 'rgb(75, 192, 192)',
+            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+            tension: 0.1
+        }]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            y: {
+                beginAtZero: true,
+                max: 100
+            }
+        }
+    }
+});
+
+// Task completion chart
+const taskCtx = document.getElementById('taskChart').getContext('2d');
+const taskChart = new Chart(taskCtx, {
+    type: 'doughnut',
+    data: {
+        labels: ['Completed', 'In Progress', 'Pending'],
+        datasets: [{
+            data: {{ task_chart_data | tojson }},
+            backgroundColor: [
+                'rgb(75, 192, 192)',
+                'rgb(255, 205, 86)',
+                'rgb(255, 99, 132)'
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+
+function exportMonthlyReports(format) {
+    const month = document.getElementById('month').value;
+    const url = `/productions/api/team-reports/export/${format}?month=${month}`;
+    window.open(url, '_blank');
+}
+
+function generateMonthlyReports() {
+    const month = document.getElementById('month').value;
+    fetch('/productions/api/team-reports/monthly/generate', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            month: month
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Monthly reports generated successfully!');
+            location.reload();
+        } else {
+            alert('Error generating reports: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error generating reports');
+    });
+}
+
+function scheduleMonthlyReports() {
+    // Implementation for scheduling reports
+    alert('Schedule reports functionality will be implemented here');
+}
+</script>
+{% endblock %} 

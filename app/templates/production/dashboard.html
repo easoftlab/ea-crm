@@ -1,0 +1,301 @@
+{% extends 'base.html' %}
+
+{% block title %}🏭 Production Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4">
+                <i class="fas fa-industry"></i> Production Dashboard
+            </h1>
+            <p class="text-muted">Welcome, {{ current_user.get_full_name() }}! Here's your comprehensive production overview.</p>
+        </div>
+    </div>
+
+    <!-- Notification Center -->
+    <div id="notification-center" class="position-fixed top-0 end-0 p-3" style="z-index: 1050;">
+        <!-- Notifications will be inserted here -->
+    </div>
+
+    <!-- Task Overview Widget -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-primary">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-tasks"></i> My Tasks Overview
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="stat-card pending text-center">
+                                <h3 class="text-warning">{{ pending_count }}</h3>
+                                <p class="mb-0">📋 Pending</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card in-progress text-center">
+                                <h3 class="text-info">{{ in_progress_count }}</h3>
+                                <p class="mb-0">⚡ In Progress</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card completed text-center">
+                                <h3 class="text-success">{{ completed_count }}</h3>
+                                <p class="mb-0">✅ Completed</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card overdue text-center">
+                                <h3 class="text-danger">{{ overdue_count }}</h3>
+                                <p class="mb-0">⏰ Overdue</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card productivity text-center">
+                                <h3 class="text-primary">
+                                    <a href="{{ url_for('production.productivity_analytics') }}" class="text-decoration-none">
+                                        <i class="fas fa-chart-line"></i>
+                                    </a>
+                                </h3>
+                                <p class="mb-0">
+                                    <a href="{{ url_for('production.productivity_analytics') }}" class="text-decoration-none text-dark">
+                                        📊 Analytics
+                                    </a>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Dashboard Content -->
+    <div class="row">
+        <!-- Left Panel - Tasks and Activity -->
+        <div class="col-lg-8">
+            <!-- Recent Tasks -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-list"></i> Recent Tasks</h5>
+                    <div class="btn-group" role="group">
+                        <a href="{{ url_for('productions.production_tasks') }}" class="btn btn-sm btn-primary">View All Tasks</a>
+                        <a href="{{ url_for('productions.task_management') }}" class="btn btn-sm btn-info">
+                            <i class="fas fa-cog"></i> Task Management
+                        </a>
+                        <a href="{{ url_for('productions.production_tasks') }}?view=kanban" class="btn btn-sm btn-success">
+                            <i class="fas fa-columns"></i> Kanban Board
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if assigned_tasks %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>📋 Task</th>
+                                        <th>👥 Client</th>
+                                        <th>📊 Status</th>
+                                        <th>⚡ Priority</th>
+                                        <th>📅 Due Date</th>
+                                        <th>⚡ Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for task in assigned_tasks[:5] %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ task.title }}</strong>
+                                            {% if task.description %}
+                                                <br><small class="text-muted">{{ task.description[:50] }}{% if task.description|length > 50 %}...{% endif %}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if task.client_id %}
+                                                <span class="badge bg-secondary">{{ task.client_id }}</span>
+                                            {% else %}
+                                                <span class="text-muted">No Client</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{{ task.get_status_color() }}">
+                                                {{ task.status.replace('_', ' ').title() }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{{ task.get_priority_color() }}">
+                                                {{ task.priority.title() }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if task.due_date %}
+                                                <span class="{% if task.due_date < today and task.status in ['pending', 'in_progress'] %}text-danger{% endif %}">
+                                                    {{ task.due_date.strftime('%Y-%m-%d') }}
+                                                </span>
+                                            {% else %}
+                                                <span class="text-muted">No due date</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <a href="{{ url_for('production.view_task', task_id=task.id) }}" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-inbox fa-3x mb-3"></i>
+                            <p>No tasks assigned yet.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Real-Time Activity Monitor -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card border-info">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-eye"></i> Real-Time Activity Monitor
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="text-center">
+                                        <div class="activity-indicator active" id="activity-status">
+                                            <i class="fas fa-circle text-success"></i>
+                                            <span class="ms-2">Active</span>
+                                        </div>
+                                        <small class="text-muted">Current Status</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="text-center">
+                                        <h4 id="current-app">-</h4>
+                                        <small class="text-muted">Active Application</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="text-center">
+                                        <h4 id="session-time">-</h4>
+                                        <small class="text-muted">Today's Session</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="text-center">
+                                        <h4 id="productivity-score">{{ "%.1f"|format(productivity_score) }}%</h4>
+                                        <small class="text-muted">Productivity Score</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Desktop Activity Log -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card border-info">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-desktop"></i> Desktop Activity Log
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            {% if today_desktop_activities and today_desktop_activities|length > 0 %}
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered table-striped mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Time</th>
+                                            <th>App</th>
+                                            <th>Title</th>
+                                            <th>Duration (s)</th>
+                                            <th>Type</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for act in today_desktop_activities %}
+                                        <tr>
+                                            <td>{{ act.timestamp.strftime('%H:%M:%S') }}</td>
+                                            <td>{{ act.app }}</td>
+                                            <td>{{ act.title }}</td>
+                                            <td>{{ act.duration or '-' }}</td>
+                                            <td>{{ act.activity_type or '-' }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <div class="text-muted">No desktop activity recorded for today.</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel - Quick Actions -->
+        <div class="col-lg-4">
+            <!-- AI-Powered Insights Widget -->
+            <div class="card mb-4 border-primary">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-brain"></i> AI Insights
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="ai-insights-content">
+                        <div class="text-center">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mt-2 text-muted">Analyzing your productivity patterns...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-bolt"></i> Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('productions.production_tasks') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-tasks"></i> View All Tasks
+                        </a>
+                        <a href="{{ url_for('productions.task_management') }}" class="btn btn-outline-success">
+                            <i class="fas fa-cog"></i> Task Management
+                        </a>
+                        <a href="{{ url_for('productions.files') }}" class="btn btn-outline-info">
+                            <i class="fas fa-folder"></i> Files
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+{% endblock %}
+
+{% block scripts %}
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/ai-insights.js') }}"></script>
+    {% endblock %} 

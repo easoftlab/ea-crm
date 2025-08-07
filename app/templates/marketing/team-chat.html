@@ -1,0 +1,473 @@
+{% extends "base.html" %}
+
+{% block title %}Marketing Team Chat{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0 text-primary">
+                        <i class="fas fa-comments me-2"></i>Marketing Team Chat
+                    </h1>
+                    <p class="text-muted mb-0">Real-time team communication</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-primary" id="notificationToggle">
+                        <i class="fas fa-bell me-1"></i>Notifications
+                    </button>
+                    <button class="btn btn-outline-success" id="fileUploadBtn">
+                        <i class="fas fa-paperclip me-1"></i>Share File
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Chat Interface -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-users me-2"></i>Marketing Team
+                        </h5>
+                        <div class="d-flex align-items-center">
+                            <span class="badge bg-success me-2" id="onlineCount">0</span>
+                            <small>Online</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <!-- Chat Messages -->
+                    <div class="chat-messages p-3" id="chatMessages" style="height: 400px; overflow-y: auto;">
+                        <!-- Messages will be loaded here -->
+                    </div>
+                    
+                    <!-- Message Input -->
+                    <div class="chat-input p-3 border-top">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="messageInput" placeholder="Type your message...">
+                            <button class="btn btn-primary" id="sendMessage">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                        <div class="mt-2">
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Press Enter to send, Ctrl+Enter for new line
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Team Members & Files -->
+        <div class="col-md-4">
+            <!-- Team Members -->
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-users me-2"></i>Team Members
+                    </h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush" id="teamMembersList">
+                        <!-- Team members will be loaded here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Shared Files -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-file me-2"></i>Shared Files
+                    </h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush" id="sharedFilesList">
+                        <!-- Shared files will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- File Upload Modal -->
+<div class="modal fade" id="fileUploadModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Share File</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="fileUploadForm">
+                    <div class="mb-3">
+                        <label for="fileInput" class="form-label">Select File</label>
+                        <input type="file" class="form-control" id="fileInput" accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.jpg,.png">
+                    </div>
+                    <div class="mb-3">
+                        <label for="fileDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="fileDescription" rows="3" placeholder="Describe the file..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="uploadFile">Upload & Share</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Notification Settings Modal -->
+<div class="modal fade" id="notificationModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Notification Settings</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="messageNotifications" checked>
+                    <label class="form-check-label" for="messageNotifications">
+                        New message notifications
+                    </label>
+                </div>
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="fileNotifications" checked>
+                    <label class="form-check-label" for="fileNotifications">
+                        File share notifications
+                    </label>
+                </div>
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="mentionNotifications" checked>
+                    <label class="form-check-label" for="mentionNotifications">
+                        Mention notifications
+                    </label>
+                </div>
+                <div class="mb-3">
+                    <label for="notificationSound" class="form-label">Notification Sound</label>
+                    <select class="form-select" id="notificationSound">
+                        <option value="default">Default</option>
+                        <option value="chime">Chime</option>
+                        <option value="ding">Ding</option>
+                        <option value="none">None</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveNotificationSettings">Save Settings</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+<script>
+// Advanced Team Chat JavaScript
+class TeamChat {
+    constructor() {
+        this.socket = io();
+        this.messages = [];
+        this.teamMembers = [];
+        this.sharedFiles = [];
+        this.notificationSettings = {
+            messages: true,
+            files: true,
+            mentions: true,
+            sound: 'default'
+        };
+        
+        this.initializeEventListeners();
+        this.loadTeamMembers();
+        this.loadSharedFiles();
+        this.setupSocketEvents();
+    }
+
+    initializeEventListeners() {
+        // Message input
+        document.getElementById('messageInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.ctrlKey) {
+                e.preventDefault();
+                this.sendMessage();
+            }
+        });
+
+        document.getElementById('sendMessage').addEventListener('click', () => {
+            this.sendMessage();
+        });
+
+        // File upload
+        document.getElementById('fileUploadBtn').addEventListener('click', () => {
+            new bootstrap.Modal(document.getElementById('fileUploadModal')).show();
+        });
+
+        document.getElementById('uploadFile').addEventListener('click', () => {
+            this.uploadFile();
+        });
+
+        // Notifications
+        document.getElementById('notificationToggle').addEventListener('click', () => {
+            new bootstrap.Modal(document.getElementById('notificationModal')).show();
+        });
+
+        document.getElementById('saveNotificationSettings').addEventListener('click', () => {
+            this.saveNotificationSettings();
+        });
+    }
+
+    setupSocketEvents() {
+        this.socket.on('connect', () => {
+            console.log('Connected to chat server');
+            this.updateOnlineCount();
+        });
+
+        this.socket.on('new_message', (data) => {
+            this.addMessage(data);
+            if (this.notificationSettings.messages) {
+                this.showNotification('New message', data.message);
+            }
+        });
+
+        this.socket.on('file_shared', (data) => {
+            this.addSharedFile(data);
+            if (this.notificationSettings.files) {
+                this.showNotification('File shared', data.filename);
+            }
+        });
+
+        this.socket.on('user_joined', (data) => {
+            this.updateOnlineCount();
+            this.showNotification('User joined', `${data.username} joined the chat`);
+        });
+
+        this.socket.on('user_left', (data) => {
+            this.updateOnlineCount();
+            this.showNotification('User left', `${data.username} left the chat`);
+        });
+    }
+
+    sendMessage() {
+        const input = document.getElementById('messageInput');
+        const message = input.value.trim();
+        
+        if (message) {
+            this.socket.emit('send_message', {
+                message: message,
+                team: 'marketing'
+            });
+            input.value = '';
+        }
+    }
+
+    addMessage(data) {
+        const messagesContainer = document.getElementById('chatMessages');
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'message mb-3';
+        
+        const time = new Date(data.timestamp).toLocaleTimeString();
+        
+        messageDiv.innerHTML = `
+            <div class="d-flex align-items-start">
+                <div class="flex-shrink-0">
+                    <img src="${data.avatar || '/static/images/default-avatar.png'}" 
+                         class="rounded-circle" width="40" height="40" alt="${data.username}">
+                </div>
+                <div class="flex-grow-1 ms-3">
+                    <div class="d-flex align-items-center mb-1">
+                        <strong class="me-2">${data.username}</strong>
+                        <small class="text-muted">${time}</small>
+                    </div>
+                    <div class="message-content">
+                        ${this.formatMessage(data.message)}
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        messagesContainer.appendChild(messageDiv);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    formatMessage(message) {
+        // Convert URLs to links
+        message = message.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank">$1</a>');
+        
+        // Convert mentions to highlighted text
+        message = message.replace(/@(\w+)/g, '<span class="badge bg-primary">@$1</span>');
+        
+        // Convert emojis
+        const emojiMap = {
+            ':)': '😊', ':(': '😢', ':D': '😃', ';)': '😉',
+            'thumbsup': '👍', 'thumbsdown': '👎', 'heart': '❤️'
+        };
+        
+        Object.keys(emojiMap).forEach(emoji => {
+            message = message.replace(new RegExp(emoji, 'g'), emojiMap[emoji]);
+        });
+        
+        return message;
+    }
+
+    uploadFile() {
+        const fileInput = document.getElementById('fileInput');
+        const description = document.getElementById('fileDescription').value;
+        
+        if (fileInput.files.length > 0) {
+            const file = fileInput.files[0];
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('description', description);
+            formData.append('team', 'marketing');
+            
+            fetch('/marketing/upload-file', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    this.socket.emit('file_shared', data);
+                    bootstrap.Modal.getInstance(document.getElementById('fileUploadModal')).hide();
+                    document.getElementById('fileUploadForm').reset();
+                }
+            });
+        }
+    }
+
+    loadTeamMembers() {
+        fetch('/marketing/api/team-members')
+        .then(response => response.json())
+        .then(data => {
+            this.teamMembers = data.members;
+            this.renderTeamMembers();
+        });
+    }
+
+    renderTeamMembers() {
+        const container = document.getElementById('teamMembersList');
+        container.innerHTML = '';
+        
+        this.teamMembers.forEach(member => {
+            const memberDiv = document.createElement('div');
+            memberDiv.className = 'list-group-item d-flex align-items-center';
+            
+            memberDiv.innerHTML = `
+                <div class="flex-shrink-0">
+                    <img src="${member.avatar || '/static/images/default-avatar.png'}" 
+                         class="rounded-circle" width="32" height="32" alt="${member.username}">
+                </div>
+                <div class="flex-grow-1 ms-3">
+                    <div class="d-flex align-items-center">
+                        <strong class="me-2">${member.username}</strong>
+                        <span class="badge ${member.online ? 'bg-success' : 'bg-secondary'}">${member.online ? 'Online' : 'Offline'}</span>
+                    </div>
+                    <small class="text-muted">${member.role}</small>
+                </div>
+            `;
+            
+            container.appendChild(memberDiv);
+        });
+    }
+
+    loadSharedFiles() {
+        fetch('/marketing/api/shared-files')
+        .then(response => response.json())
+        .then(data => {
+            this.sharedFiles = data.files;
+            this.renderSharedFiles();
+        });
+    }
+
+    renderSharedFiles() {
+        const container = document.getElementById('sharedFilesList');
+        container.innerHTML = '';
+        
+        this.sharedFiles.forEach(file => {
+            const fileDiv = document.createElement('div');
+            fileDiv.className = 'list-group-item d-flex align-items-center';
+            
+            fileDiv.innerHTML = `
+                <div class="flex-shrink-0">
+                    <i class="fas fa-file me-2"></i>
+                </div>
+                <div class="flex-grow-1 ms-3">
+                    <div class="d-flex align-items-center">
+                        <strong class="me-2">${file.filename}</strong>
+                        <small class="text-muted">${file.size}</small>
+                    </div>
+                    <small class="text-muted">Shared by ${file.shared_by} on ${file.shared_date}</small>
+                </div>
+                <div class="flex-shrink-0">
+                    <a href="${file.download_url}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-download"></i>
+                    </a>
+                </div>
+            `;
+            
+            container.appendChild(fileDiv);
+        });
+    }
+
+    addSharedFile(data) {
+        this.sharedFiles.unshift(data);
+        this.renderSharedFiles();
+    }
+
+    updateOnlineCount() {
+        const onlineCount = this.teamMembers.filter(member => member.online).length;
+        document.getElementById('onlineCount').textContent = onlineCount;
+    }
+
+    showNotification(title, message) {
+        if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification(title, { body: message });
+        }
+        
+        // Play notification sound
+        if (this.notificationSettings.sound !== 'none') {
+            this.playNotificationSound();
+        }
+    }
+
+    playNotificationSound() {
+        const audio = new Audio(`/static/sounds/${this.notificationSettings.sound}.mp3`);
+        audio.play().catch(e => console.log('Could not play notification sound'));
+    }
+
+    saveNotificationSettings() {
+        this.notificationSettings = {
+            messages: document.getElementById('messageNotifications').checked,
+            files: document.getElementById('fileNotifications').checked,
+            mentions: document.getElementById('mentionNotifications').checked,
+            sound: document.getElementById('notificationSound').value
+        };
+        
+        localStorage.setItem('chatNotificationSettings', JSON.stringify(this.notificationSettings));
+        bootstrap.Modal.getInstance(document.getElementById('notificationModal')).hide();
+    }
+}
+
+// Initialize chat when page loads
+document.addEventListener('DOMContentLoaded', () => {
+    new TeamChat();
+    
+    // Request notification permission
+    if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+    }
+});
+</script>
+{% endblock %} 

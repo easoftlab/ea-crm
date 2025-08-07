@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}Lead Projections Overview{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2><i class="fas fa-chart-bar"></i> Lead Projections Overview</h2>
+                <div>
+                    <div class="input-group" style="width: 200px;">
+                        <input type="month" class="form-control" id="monthSelector" 
+                               value="{{ selected_month.strftime('%Y-%m') }}" 
+                               onchange="window.location.href='?month=' + this.value">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+
+    <!-- Individual Lead Projections -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-list"></i> Individual Lead Projections</h5>
+                </div>
+                <div class="card-body">
+                    {% if projections_by_lead %}
+                        {% for lead_id, data in projections_by_lead.items() %}
+                        <div class="mb-4">
+                            <h6 class="text-primary mb-3">
+                                <i class="fas fa-building"></i> {{ data.lead.company_name }}
+                                <span class="badge bg-secondary">{{ data.lead.status }}</span>
+                            </h6>
+                            
+                            <div class="row">
+                                {% for projection in data.projections %}
+                                <div class="col-md-4 mb-3">
+                                    <div class="card h-100 border-{{ projection.get_status_color() }}">
+                                        <div class="card-header bg-{{ projection.get_status_color() }} text-white">
+                                            <h6 class="mb-0">
+                                                <i class="fas fa-{{ 'dollar-sign' if projection.projection_type == 'revenue' else 'briefcase' if projection.projection_type == 'work_volume' else 'tasks' }}"></i>
+                                                {{ projection.projection_type|replace('_', ' ')|title }}
+                                            </h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row text-center">
+                                                <div class="col-6">
+                                                    <h6 class="text-muted">Target</h6>
+                                                    <h4 class="text-primary">
+                                                        {% if projection.projection_type == 'revenue' %}
+                                                            ${{ "{:,}".format(projection.target_value) }}
+                                                        {% else %}
+                                                            {{ projection.target_value }}
+                                                        {% endif %}
+                                                    </h4>
+                                                </div>
+                                                <div class="col-6">
+                                                    <h6 class="text-muted">Actual</h6>
+                                                    <h4 class="text-{{ projection.get_status_color() }}">
+                                                        {% if projection.projection_type == 'revenue' %}
+                                                            ${{ "{:,}".format(projection.actual_value) }}
+                                                        {% else %}
+                                                            {{ projection.actual_value }}
+                                                        {% endif %}
+                                                    </h4>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Progress Bar -->
+                                            <div class="mt-3">
+                                                <div class="d-flex justify-content-between mb-1">
+                                                    <span class="text-muted">Progress</span>
+                                                    <span class="text-{{ projection.get_status_color() }} fw-bold">{{ "%.1f"|format(projection.completion_percentage) }}%</span>
+                                                </div>
+                                                <div class="progress" style="height: 8px;">
+                                                    <div class="progress-bar bg-{{ projection.get_status_color() }}" 
+                                                         style="width: {{ projection.completion_percentage }}%">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Status Badge -->
+                                            <div class="mt-2 text-center">
+                                                {% if projection.completion_percentage >= 100 %}
+                                                    <span class="badge bg-success">Target Achieved!</span>
+                                                {% elif projection.completion_percentage >= 75 %}
+                                                    <span class="badge bg-warning">On Track</span>
+                                                {% elif projection.completion_percentage >= 50 %}
+                                                    <span class="badge bg-info">In Progress</span>
+                                                {% else %}
+                                                    <span class="badge bg-danger">Needs Attention</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-chart-bar fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No lead projections found for {{ selected_month.strftime('%B %Y') }}</h5>
+                            <p class="text-muted">Managers will set projections for existing converted leads here.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

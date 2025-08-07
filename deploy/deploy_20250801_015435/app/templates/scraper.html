@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% block title %}Scraper{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mt-4 mb-3">
+  <div>
+    <h2 class="mb-0"><span>🕸️</span> Scraper Results</h2>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Scraper</li>
+      </ol>
+    </nav>
+  </div>
+</div>
+<div class="table-responsive">
+  <table class="table table-striped table-hover align-middle">
+    <thead class="table-light">
+      <tr>
+        <th>🏢 Company Name</th>
+        <th>🔗 Website</th>
+        <th>🏷️ Industry</th>
+        <th>💼 Hiring?</th>
+        <th>👤 Key Person</th>
+        <th>🎯 Role</th>
+        <th>🔗 LinkedIn URL</th>
+        <th>📅 Date Scraped</th>
+        <th>📊 Status</th>
+        <th>🤖 AI Score</th>
+        <th>🧠 Intent</th>
+        <th>📝 AI Message</th>
+        <th>🧪 Variant</th>
+        <th>💬 Reply</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for lead in scraped_leads %}
+      <tr>
+        <td>{{ lead.company_name }}</td>
+        <td>{% if lead.website %}<a href="{{ lead.website }}" target="_blank" rel="noopener">🌐</a>{% endif %}</td>
+        <td>{{ lead.industry }}</td>
+        <td>{{ lead.hiring }}</td>
+        <td>{{ lead.key_person }}</td>
+        <td>{{ lead.role }}</td>
+        <td>{% if lead.linkedin_url %}<a href="{{ lead.linkedin_url }}" target="_blank" rel="noopener">🔗</a>{% endif %}</td>
+        <td>{{ lead.date_scraped.strftime('%Y-%m-%d') if lead.date_scraped else '' }}</td>
+        <td>{{ lead.status }}</td>
+        <td>{{ '%.2f' % lead.lead_score if hasattr(lead, 'lead_score') else '-' }}</td>
+        <td>{% if hasattr(lead, 'intent_tags') and lead.intent_tags %}{{ lead.intent_tags|join(', ') }}{% else %}-{% endif %}</td>
+        <td style="max-width:220px; white-space:pre-line;">{{ lead.ai_message or '-' }}</td>
+        <td>{{ lead.message_variant or '-' }}</td>
+        <td>
+          {% if lead.message_reply %}
+            <span class="text-success">{{ lead.message_reply }}</span>
+          {% else %}
+            <form class="reply-form" data-lead-id="{{ lead.id }}">
+              <div class="input-group input-group-sm">
+                <input type="text" name="reply" class="form-control" placeholder="Log reply..." required>
+                <button class="btn btn-primary" type="submit">Save</button>
+              </div>
+            </form>
+            <span class="reply-status text-success small"></span>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="14" class="text-center text-muted">No scraped leads yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.reply-form').forEach(function(form) {
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      const leadId = form.getAttribute('data-lead-id');
+      const reply = form.querySelector('input[name="reply"]').value;
+      fetch("/scraper/log_reply", {
+        method: "POST",
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `lead_id=${leadId}&reply=${encodeURIComponent(reply)}`
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          form.style.display = 'none';
+          form.parentElement.querySelector('.reply-status').textContent = 'Reply saved!';
+          setTimeout(() => location.reload(), 800);
+        } else {
+          form.parentElement.querySelector('.reply-status').textContent = 'Error: ' + (data.error || 'Unknown');
+        }
+      });
+    });
+  });
+});
+</script>
+{% endblock %} 

@@ -1,0 +1,528 @@
+{% extends "base.html" %}
+
+{% block title %}AI Lead Generation Suggestions{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-gradient-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-robot"></i> AI-Powered Lead Generation Suggestions
+                    </h4>
+                    <p class="mb-0 mt-2">Discover new leads with intelligent AI assistance</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Company Research Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-search"></i> Company Research AI
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <form id="companyResearchForm">
+                                <div class="form-group">
+                                    <label for="industry">Industry</label>
+                                    <select class="form-control" id="industry" name="industry" required>
+                                        <option value="">Select Industry</option>
+                                        <option value="Technology">Technology</option>
+                                        <option value="Healthcare">Healthcare</option>
+                                        <option value="Finance">Finance</option>
+                                        <option value="Manufacturing">Manufacturing</option>
+                                        <option value="Retail">Retail</option>
+                                        <option value="Education">Education</option>
+                                        <option value="Real Estate">Real Estate</option>
+                                        <option value="Consulting">Consulting</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="location">Location</label>
+                                    <input type="text" class="form-control" id="location" name="location" placeholder="e.g., New York, USA" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="companySize">Company Size</label>
+                                    <select class="form-control" id="companySize" name="company_size">
+                                        <option value="small">Small (1-50 employees)</option>
+                                        <option value="medium" selected>Medium (51-500 employees)</option>
+                                        <option value="large">Large (500+ employees)</option>
+                                    </select>
+                                </div>
+                                <button type="submit" class="btn btn-success btn-block">
+                                    <i class="fas fa-search"></i> Research Companies
+                                </button>
+                            </form>
+                        </div>
+                        <div class="col-md-8">
+                            <div id="companyResearchResults" style="display: none;">
+                                <h6>Research Results</h6>
+                                <div id="companiesList" class="list-group">
+                                    <!-- Companies will be populated here -->
+                                </div>
+                            </div>
+                            <div id="companyResearchLoading" style="display: none;">
+                                <div class="text-center">
+                                    <div class="spinner-border text-success" role="status">
+                                        <span class="sr-only">Researching companies...</span>
+                                    </div>
+                                    <p class="mt-2">AI is researching companies...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contact Discovery Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-users"></i> Contact Discovery
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <form id="contactDiscoveryForm">
+                                <div class="form-group">
+                                    <label for="targetCompany">Target Company</label>
+                                    <input type="text" class="form-control" id="targetCompany" name="company_name" placeholder="e.g., TechCorp Solutions" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="companyWebsite">Company Website (Optional)</label>
+                                    <input type="url" class="form-control" id="companyWebsite" name="company_website" placeholder="https://company.com">
+                                </div>
+                                <button type="submit" class="btn btn-info btn-block">
+                                    <i class="fas fa-users"></i> Discover Contacts
+                                </button>
+                            </form>
+                        </div>
+                        <div class="col-md-8">
+                            <div id="contactDiscoveryResults" style="display: none;">
+                                <h6>Discovered Contacts</h6>
+                                <div id="contactsList" class="list-group">
+                                    <!-- Contacts will be populated here -->
+                                </div>
+                            </div>
+                            <div id="contactDiscoveryLoading" style="display: none;">
+                                <div class="text-center">
+                                    <div class="spinner-border text-info" role="status">
+                                        <span class="sr-only">Discovering contacts...</span>
+                                    </div>
+                                    <p class="mt-2">AI is discovering contacts...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Industry Targeting Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-warning text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-line"></i> Industry Targeting Suggestions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Based on Your Historical Data</h6>
+                            <p class="text-muted">AI analyzes your past performance to suggest the best industries to focus on.</p>
+                            <button id="getIndustrySuggestions" class="btn btn-warning">
+                                <i class="fas fa-chart-line"></i> Get Industry Suggestions
+                            </button>
+                        </div>
+                        <div class="col-md-6">
+                            <div id="industrySuggestionsResults" style="display: none;">
+                                <h6>Recommended Industries</h6>
+                                <div id="industriesList" class="list-group">
+                                    <!-- Industry suggestions will be populated here -->
+                                </div>
+                            </div>
+                            <div id="industrySuggestionsLoading" style="display: none;">
+                                <div class="text-center">
+                                    <div class="spinner-border text-warning" role="status">
+                                        <span class="sr-only">Analyzing industries...</span>
+                                    </div>
+                                    <p class="mt-2">AI is analyzing your data...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lead Generation Ideas Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-lightbulb"></i> Creative Lead Generation Ideas
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <h6>Personalized Ideas</h6>
+                            <p class="text-muted">AI generates creative lead generation strategies based on your preferences and success patterns.</p>
+                            <button id="getLeadIdeas" class="btn btn-primary">
+                                <i class="fas fa-lightbulb"></i> Generate Ideas
+                            </button>
+                        </div>
+                        <div class="col-md-8">
+                            <div id="leadIdeasResults" style="display: none;">
+                                <h6>Creative Strategies</h6>
+                                <div id="ideasList" class="list-group">
+                                    <!-- Lead generation ideas will be populated here -->
+                                </div>
+                            </div>
+                            <div id="leadIdeasLoading" style="display: none;">
+                                <div class="text-center">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="sr-only">Generating ideas...</span>
+                                    </div>
+                                    <p class="mt-2">AI is generating creative ideas...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lead Enrichment Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-database"></i> Lead Data Enrichment
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <form id="leadEnrichmentForm">
+                                <div class="form-group">
+                                    <label for="enrichCompanyName">Company Name</label>
+                                    <input type="text" class="form-control" id="enrichCompanyName" name="company_name" placeholder="e.g., TechCorp Solutions" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="enrichWebsite">Website (Optional)</label>
+                                    <input type="url" class="form-control" id="enrichWebsite" name="company_website" placeholder="https://company.com">
+                                </div>
+                                <div class="form-group">
+                                    <label for="enrichIndustry">Industry</label>
+                                    <input type="text" class="form-control" id="enrichIndustry" name="industry" placeholder="e.g., Technology">
+                                </div>
+                                <div class="form-group">
+                                    <label for="enrichLocation">Location</label>
+                                    <input type="text" class="form-control" id="enrichLocation" name="country" placeholder="e.g., USA">
+                                </div>
+                                <button type="submit" class="btn btn-secondary btn-block">
+                                    <i class="fas fa-database"></i> Enrich Lead Data
+                                </button>
+                            </form>
+                        </div>
+                        <div class="col-md-8">
+                            <div id="leadEnrichmentResults" style="display: none;">
+                                <h6>Enriched Data</h6>
+                                <div id="enrichedData" class="card">
+                                    <!-- Enriched data will be populated here -->
+                                </div>
+                            </div>
+                            <div id="leadEnrichmentLoading" style="display: none;">
+                                <div class="text-center">
+                                    <div class="spinner-border text-secondary" role="status">
+                                        <span class="sr-only">Enriching data...</span>
+                                    </div>
+                                    <p class="mt-2">AI is enriching lead data...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript for AI Lead Generation -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function() {
+    // Company Research
+    $('#companyResearchForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = {
+            industry: $('#industry').val(),
+            location: $('#location').val(),
+            company_size: $('#companySize').val()
+        };
+        
+        $('#companyResearchLoading').show();
+        $('#companyResearchResults').hide();
+        
+        $.ajax({
+            url: '/ai/company-research',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(formData),
+            success: function(response) {
+                $('#companyResearchLoading').hide();
+                $('#companyResearchResults').show();
+                
+                const companiesList = $('#companiesList');
+                companiesList.empty();
+                
+                response.companies.forEach(function(company) {
+                    const companyHtml = `
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1">${company.name}</h6>
+                                    <p class="mb-1"><strong>Website:</strong> ${company.website || 'N/A'}</p>
+                                    <p class="mb-1"><strong>Industry:</strong> ${company.industry}</p>
+                                    <p class="mb-1"><strong>Size:</strong> ${company.size}</p>
+                                    <p class="mb-1"><strong>Location:</strong> ${company.location}</p>
+                                    <p class="mb-1"><strong>Decision Makers:</strong> ${company.decision_makers.join(', ')}</p>
+                                    <small class="text-muted">${company.reasoning}</small>
+                                </div>
+                                <span class="badge badge-success">${Math.round(company.confidence * 100)}%</span>
+                            </div>
+                        </div>
+                    `;
+                    companiesList.append(companyHtml);
+                });
+            },
+            error: function(xhr) {
+                $('#companyResearchLoading').hide();
+                alert('Error: ' + (xhr.responseJSON?.error || 'Failed to research companies'));
+            }
+        });
+    });
+
+    // Contact Discovery
+    $('#contactDiscoveryForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = {
+            company_name: $('#targetCompany').val(),
+            company_website: $('#companyWebsite').val()
+        };
+        
+        $('#contactDiscoveryLoading').show();
+        $('#contactDiscoveryResults').hide();
+        
+        $.ajax({
+            url: '/ai/contact-discovery',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(formData),
+            success: function(response) {
+                $('#contactDiscoveryLoading').hide();
+                $('#contactDiscoveryResults').show();
+                
+                const contactsList = $('#contactsList');
+                contactsList.empty();
+                
+                response.contacts.forEach(function(contact) {
+                    const contactHtml = `
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1">${contact.name}</h6>
+                                    <p class="mb-1"><strong>Title:</strong> ${contact.title}</p>
+                                    <p class="mb-1"><strong>Department:</strong> ${contact.department}</p>
+                                    <p class="mb-1"><strong>Decision Level:</strong> 
+                                        <span class="badge badge-${contact.decision_level === 'high' ? 'danger' : contact.decision_level === 'medium' ? 'warning' : 'secondary'}">${contact.decision_level}</span>
+                                    </p>
+                                    <small class="text-muted">
+                                        <strong>Contact:</strong> ${JSON.stringify(contact.contact_info)}
+                                    </small>
+                                </div>
+                                <span class="badge badge-info">${Math.round(contact.confidence * 100)}%</span>
+                            </div>
+                        </div>
+                    `;
+                    contactsList.append(contactHtml);
+                });
+            },
+            error: function(xhr) {
+                $('#contactDiscoveryLoading').hide();
+                alert('Error: ' + (xhr.responseJSON?.error || 'Failed to discover contacts'));
+            }
+        });
+    });
+
+    // Industry Suggestions
+    $('#getIndustrySuggestions').on('click', function() {
+        $('#industrySuggestionsLoading').show();
+        $('#industrySuggestionsResults').hide();
+        
+        $.ajax({
+            url: '/ai/industry-suggestions',
+            method: 'GET',
+            success: function(response) {
+                $('#industrySuggestionsLoading').hide();
+                $('#industrySuggestionsResults').show();
+                
+                const industriesList = $('#industriesList');
+                industriesList.empty();
+                
+                response.suggestions.forEach(function(industry) {
+                    const industryHtml = `
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1">${industry.industry_name}</h6>
+                                    <p class="mb-1"><strong>Conversion Rate:</strong> ${industry.conversion_rate}%</p>
+                                    <p class="mb-1"><strong>Lead Volume:</strong> ${industry.lead_volume}</p>
+                                    <p class="mb-1"><strong>Average Deal Size:</strong> $${industry.average_deal_size.toLocaleString()}</p>
+                                    <small class="text-muted">${industry.reasoning}</small>
+                                </div>
+                                <span class="badge badge-${industry.priority_level === 'high' ? 'danger' : industry.priority_level === 'medium' ? 'warning' : 'secondary'}">${industry.priority_level}</span>
+                            </div>
+                        </div>
+                    `;
+                    industriesList.append(industryHtml);
+                });
+            },
+            error: function(xhr) {
+                $('#industrySuggestionsLoading').hide();
+                alert('Error: ' + (xhr.responseJSON?.error || 'Failed to get industry suggestions'));
+            }
+        });
+    });
+
+    // Lead Generation Ideas
+    $('#getLeadIdeas').on('click', function() {
+        $('#leadIdeasLoading').show();
+        $('#leadIdeasResults').hide();
+        
+        const preferences = {
+            preferred_industries: ['Technology', 'Healthcare'],
+            preferred_locations: ['USA', 'Canada'],
+            success_rate: 15.5
+        };
+        
+        $.ajax({
+            url: '/ai/lead-ideas',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ preferences: preferences }),
+            success: function(response) {
+                $('#leadIdeasLoading').hide();
+                $('#leadIdeasResults').show();
+                
+                const ideasList = $('#ideasList');
+                ideasList.empty();
+                
+                response.ideas.forEach(function(idea) {
+                    const ideaHtml = `
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1">${idea.idea_title}</h6>
+                                    <p class="mb-1"><strong>Target Audience:</strong> ${idea.target_audience}</p>
+                                    <p class="mb-1"><strong>Approach:</strong> ${idea.approach_method}</p>
+                                    <p class="mb-1"><strong>Expected Outcome:</strong> ${idea.expected_outcome}</p>
+                                    <small class="text-muted"><strong>Time Required:</strong> ${idea.time_required}</small>
+                                </div>
+                                <span class="badge badge-${idea.difficulty_level === 'easy' ? 'success' : idea.difficulty_level === 'medium' ? 'warning' : 'danger'}">${idea.difficulty_level}</span>
+                            </div>
+                        </div>
+                    `;
+                    ideasList.append(ideaHtml);
+                });
+            },
+            error: function(xhr) {
+                $('#leadIdeasLoading').hide();
+                alert('Error: ' + (xhr.responseJSON?.error || 'Failed to generate lead ideas'));
+            }
+        });
+    });
+
+    // Lead Enrichment
+    $('#leadEnrichmentForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = {
+            lead_data: {
+                company_name: $('#enrichCompanyName').val(),
+                company_website: $('#enrichWebsite').val(),
+                industry: $('#enrichIndustry').val(),
+                country: $('#enrichLocation').val()
+            }
+        };
+        
+        $('#leadEnrichmentLoading').show();
+        $('#leadEnrichmentResults').hide();
+        
+        $.ajax({
+            url: '/ai/lead-enrichment',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(formData),
+            success: function(response) {
+                $('#leadEnrichmentLoading').hide();
+                $('#leadEnrichmentResults').show();
+                
+                const enrichedData = $('#enrichedData');
+                enrichedData.empty();
+                
+                // Display enriched data
+                const data = response.enriched_data;
+                const enrichedHtml = `
+                    <div class="card-body">
+                        <h6>Enriched Company Information</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Company Size:</strong> ${data.company_size || 'N/A'}</p>
+                                <p><strong>Revenue Estimate:</strong> ${data.revenue_estimate || 'N/A'}</p>
+                                <p><strong>Technology Stack:</strong> ${data.technology_stack || 'N/A'}</p>
+                                <p><strong>Recent News:</strong> ${data.recent_news || 'N/A'}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Social Media:</strong> ${data.social_media || 'N/A'}</p>
+                                <p><strong>Key Competitors:</strong> ${data.competitors || 'N/A'}</p>
+                                <p><strong>Growth Indicators:</strong> ${data.growth_indicators || 'N/A'}</p>
+                                <p><strong>Pain Points:</strong> ${data.pain_points || 'N/A'}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                enrichedData.html(enrichedHtml);
+            },
+            error: function(xhr) {
+                $('#leadEnrichmentLoading').hide();
+                alert('Error: ' + (xhr.responseJSON?.error || 'Failed to enrich lead data'));
+            }
+        });
+    });
+});
+</script>
+{% endblock %} 

@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Role{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-warning text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-edit"></i> Edit Role: {{ role.name }}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="name" class="form-label">Role Name *</label>
+                                    <input type="text" class="form-control" id="name" name="name" value="{{ role.name }}" required>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="description" class="form-label">Description</label>
+                                    <textarea class="form-control" id="description" name="description" rows="3">{{ role.description or '' }}</textarea>
+                                </div>
+                                
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle"></i>
+                                    <strong>Role Info:</strong><br>
+                                    <small>Users with this role: {{ role.users|length }}<br>
+                                    Created: {{ role.created_at.strftime('%Y-%m-%d %H:%M') if role.created_at else 'Unknown' }}</small>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Permissions</label>
+                                    <div class="border rounded p-3" style="max-height: 300px; overflow-y: auto;">
+                                        {% for permission in available_permissions %}
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="permissions" value="{{ permission }}" id="perm_{{ permission }}"
+                                                   {% if permission in current_permissions %}checked{% endif %}>
+                                            <label class="form-check-label" for="perm_{{ permission }}">
+                                                <strong>{{ permission.replace('_', ' ').title() }}</strong>
+                                                {% if permission == 'admin' %}
+                                                    <span class="badge bg-danger">Full Access</span>
+                                                {% elif permission == 'manage_users' %}
+                                                    <span class="badge bg-warning">User Management</span>
+                                                {% elif permission == 'manage_roles' %}
+                                                    <span class="badge bg-info">Role Management</span>
+                                                {% elif permission == 'view_reports' %}
+                                                    <span class="badge bg-success">Reports</span>
+                                                {% elif permission == 'manage_leads' %}
+                                                    <span class="badge bg-primary">Lead Management</span>
+                                                {% elif permission == 'manage_scraper' %}
+                                                    <span class="badge bg-secondary">Scraper</span>
+                                                {% elif permission == 'add_leads' %}
+                                                    <span class="badge bg-success">Add Leads Only</span>
+                                                {% elif permission == 'manage_tasks' %}
+                                                    <span class="badge bg-info">Task Management</span>
+                                                {% elif permission == 'upload_files' %}
+                                                    <span class="badge bg-warning">File Upload</span>
+                                                {% elif permission == 'access_lan_server' %}
+                                                    <span class="badge bg-secondary">LAN Server Access</span>
+                                                {% elif permission == 'view_client_info' %}
+                                                    <span class="badge bg-primary">Client Information</span>
+                                                {% elif permission == 'view_tasks' %}
+                                                    <span class="badge bg-info">View Tasks</span>
+                                                {% elif permission == 'manage_scraper' %}
+                                                    <span class="badge bg-secondary">Manage Scraper</span>
+                                                {% elif permission == 'messenger_send' %}
+                                                    <span class="badge bg-success">Messenger Send</span>
+                                                {% elif permission == 'messenger_read' %}
+                                                    <span class="badge bg-info">Messenger Read</span>
+                                                {% elif permission == 'messenger_moderate' %}
+                                                    <span class="badge bg-warning">Messenger Moderate</span>
+                                                {% elif permission == 'messenger_admin' %}
+                                                    <span class="badge bg-danger">Messenger Admin</span>
+                                                {% elif permission == 'manage_marketing_team' %}
+                                                    <span class="badge bg-primary">Manage Marketing Team</span>
+                                                {% elif permission == 'manage_productions_team' %}
+                                                    <span class="badge bg-primary">Manage Productions Team</span>
+                                                {% endif %}
+                                            </label>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('auth.admin_roles') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Back to Roles
+                            </a>
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-save"></i> Update Role
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Add some interactivity
+document.addEventListener('DOMContentLoaded', function() {
+    const adminCheckbox = document.getElementById('perm_admin');
+    const allCheckboxes = document.querySelectorAll('input[name="permissions"]');
+    
+    // If admin is selected, select all permissions
+    adminCheckbox.addEventListener('change', function() {
+        if (this.checked) {
+            allCheckboxes.forEach(checkbox => {
+                checkbox.checked = true;
+            });
+        }
+    });
+    
+    // If any other permission is unchecked, uncheck admin
+    allCheckboxes.forEach(checkbox => {
+        if (checkbox !== adminCheckbox) {
+            checkbox.addEventListener('change', function() {
+                if (!this.checked) {
+                    adminCheckbox.checked = false;
+                }
+            });
+        }
+    });
+});
+</script>
+{% endblock %} 

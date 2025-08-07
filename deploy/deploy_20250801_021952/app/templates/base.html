@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{% endblock %} - EA CRM</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" rel="stylesheet">
+    <style>
+        .navbar-brand {
+            font-weight: bold;
+            font-size: 1.5rem;
+        }
+        .user-menu {
+            min-width: 200px;
+        }
+        .timezone-display {
+            font-size: 0.8rem;
+        }
+        
+        /* Compact Timezone Display Styles */
+        .compact-timezone-container {
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 6px 12px;
+            margin: 0 10px;
+            border: 1px solid #dc3545;
+            min-width: 200px;
+        }
+        
+        .timezone-icon {
+            font-size: 1rem;
+            margin-right: 8px;
+            color: #6c757d;
+        }
+        
+        .timezone-icon.clickable {
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 50%;
+        }
+        
+        .compact-timezone-display {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .compact-timezone-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 4px 8px;
+            background: transparent;
+            border-radius: 4px;
+            min-width: 50px;
+        }
+        
+        .compact-label {
+            font-size: 0.7rem;
+            font-weight: bold;
+            color: #6c757d;
+            margin-bottom: 2px;
+        }
+        
+        .compact-time {
+            font-size: 0.8rem;
+            color: #495057;
+            font-weight: 500;
+        }
+        
+        .compact-separator {
+            color: #adb5bd;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        
+        .compact-timezone-toggle {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            color: #6c757d;
+            margin-left: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+        }
+        
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .timezone-detail {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .timezone-detail:last-child {
+            border-bottom: none;
+        }
+        
+        .timezone-detail-label {
+            font-weight: 600;
+            color: white;
+        }
+        
+        .timezone-detail-time {
+            font-weight: 700;
+            color: #fff;
+            background: rgba(255,255,255,0.2);
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .timezone-container {
+                margin: 5px 0;
+                padding: 6px 10px;
+            }
+            
+            .timezone-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 4px;
+            }
+            
+            .timezone-item {
+                font-size: 0.7rem;
+                padding: 3px 6px;
+            }
+        }
+        .dark-mode {
+            background-color: #1a1a1a !important;
+            color: #ffffff !important;
+        }
+        .dark-mode .navbar {
+            background-color: #2d2d2d !important;
+        }
+        .dark-mode .card {
+            background-color: #2d2d2d !important;
+            border-color: #404040 !important;
+        }
+        .dark-mode .table {
+            color: #ffffff !important;
+        }
+        .dark-mode .form-control {
+            background-color: #404040 !important;
+            border-color: #555555 !important;
+            color: #ffffff !important;
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    {% if current_user.is_authenticated %}
+    <!-- Navigation for authenticated users -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{{ url_for('main.dashboard') }}">
+                🏢 EA CRM
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <!-- Add Lead - Available to all users except Production -->
+                    {% if not current_user.is_authenticated or not current_user.has_permission('view_tasks') %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('main.add_lead') }}">
+                            <i class="fas fa-plus"></i> Add Lead
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    <!-- Dashboard Navigation -->
+                    {% if current_user.has_permission('admin') %}
+                        <!-- Admin users see Main Dashboard directly -->
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('main.dashboard') }}">
+                                <i class="fas fa-tachometer-alt"></i> Main Dashboard
+                            </a>
+                        </li>
+                    {% else %}
+                        <!-- All non-admin users see My Dashboard for personalized content -->
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('main.personal_dashboard') }}">
+                                <i class="fas fa-user-circle"></i> My Dashboard
+                            </a>
+                        </li>
+                        
+                        <!-- Main Dashboard - Only for users with manage_leads permission (non-admin) -->
+                        {% if current_user.has_permission('manage_leads') %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('main.dashboard') }}">
+                                <i class="fas fa-tachometer-alt"></i> Main Dashboard
+                            </a>
+                        </li>
+                        {% endif %}
+                    {% endif %}
+                    
+                    <!-- Reports - Only for users with view_reports permission, excluding Callers -->
+                    {% if current_user.has_permission('view_reports') and current_user.role.name != 'Caller' %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('main.reports') }}">
+                            <i class="fas fa-chart-bar"></i> Reports
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    <!-- Converted Clients - Different views for different users -->
+                    {% if current_user.has_permission('admin') %}
+                    <!-- Admin sees global converted clients -->
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('main.converted_clients') }}">
+                            <i class="fas fa-trophy"></i> Converted Clients
+                        </a>
+                    </li>
+                    {% elif current_user.role.name == 'Caller' %}
+                    <!-- Callers see their personal converted clients -->
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('main.personal_converted_clients') }}">
+                            <i class="fas fa-trophy"></i> My Converted Clients
+                        </a>
+                    </li>
+                    {% elif current_user.has_permission('manage_leads') %}
+                    <!-- Other users with manage_leads see global converted clients -->
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('main.converted_clients') }}">
+                            <i class="fas fa-trophy"></i> Converted Clients
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    <!-- Projections - For Caller users and Manager (not Admin) -->
+                    {% if current_user.role.name == 'Caller' or (current_user.has_permission('manage_leads') and current_user.role.name != 'Admin') %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('main.projections') }}">
+                                <i class="fas fa-chart-line"></i> Projections
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('main.converted_clients_management') }}">
+                                <i class="fas fa-users"></i> My Clients
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('main.converted_leads_management') }}">
+                                <i class="fas fa-trophy"></i> Existing Leads
+                            </a>
+                        </li>
+                    {% endif %}
+                    
+                    <!-- Scraper - Only for users with manage_scraper permission -->
+                    {% if current_user.has_permission('manage_scraper') %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('main.scraper') }}">
+                            <i class="fas fa-spider"></i> Scraper
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    <!-- Production - Only for users with view_tasks permission -->
+                    {% if current_user.is_authenticated and current_user.has_permission('view_tasks') %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="productionDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            🏭 Production
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="productionDropdown">
+                            <li><a class="dropdown-item" href="{{ url_for('production.dashboard') }}">📊 Dashboard</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('production.tasks') }}">📋 Tasks</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('production.upload_files') }}">📁 Upload Files</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('production.lan_server') }}">🌐 LAN Server</a></li>
+                        </ul>
+                    </li>
+                    {% endif %}
+                    {% if current_user.has_permission('admin') %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-cog"></i> Admin
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{{ url_for('main.admin_activity_dashboard') }}">
+                                <i class="fas fa-chart-line"></i> Activity Dashboard
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.admin_projections') }}">
+                                <i class="fas fa-chart-bar"></i> Projections Overview
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.admin_converted_clients') }}">
+                                <i class="fas fa-users"></i> Converted Clients
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.admin_converted_clients_projections') }}">
+                                <i class="fas fa-chart-bar"></i> Client Projections
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.admin_converted_leads_projections') }}">
+                                <i class="fas fa-chart-bar"></i> Lead Projections
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.admin_manage_tasks') }}">
+                                <i class="fas fa-tasks"></i> Task Management
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.admin_production_dashboard') }}">
+                                <i class="fas fa-industry"></i> Production Dashboard
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('auth.admin_users') }}">
+                                <i class="fas fa-users"></i> User Management
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('auth.admin_profile_changes') }}">
+                                <i class="fas fa-user-edit"></i> Profile Change Requests
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('auth.admin_roles') }}">
+                                <i class="fas fa-user-tag"></i> Role Management
+                            </a></li>
+                        </ul>
+                    </li>
+                    {% endif %}
+                </ul>
+                
+                <!-- Compact Timezone Display -->
+                {% if not current_user.is_authenticated or not current_user.has_permission('view_tasks') %}
+                <div class="navbar-nav me-3">
+                    <div class="compact-timezone-container">
+                        <div class="d-flex align-items-center">
+                            <span class="timezone-icon clickable" onclick="resetToBestCallingTimes()" title="Reset to best calling times">🕐</span>
+                            <div class="compact-timezone-display">
+                                <span class="compact-timezone-item" id="primary-timezone">
+                                    <span class="compact-label" id="primary-label"></span>
+                                    <span class="compact-time" id="primary-time"></span>
+                                </span>
+                                <span class="compact-separator">|</span>
+                                <span class="compact-timezone-item" id="secondary-timezone">
+                                    <span class="compact-label" id="secondary-label"></span>
+                                    <span class="compact-time" id="secondary-time"></span>
+                                </span>
+                            </div>
+                            <button class="compact-timezone-toggle" onclick="cycleTimezones()" title="Queue next best time">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- User Menu -->
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user-circle"></i> {{ current_user.get_full_name() }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end user-menu">
+                            <li><a class="dropdown-item" href="{{ url_for('auth.profile') }}">
+                                <i class="fas fa-user"></i> Profile
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('auth.change_password') }}">
+                                <i class="fas fa-key"></i> Change Password
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">
+                                <i class="fas fa-sign-out-alt"></i> Logout
+                            </a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    {% endif %}
+    
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="container-fluid mt-3">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+    
+    <!-- Main Content -->
+    <main class="{% if current_user.is_authenticated %}container-fluid mt-3{% endif %}">
+        {% block content %}{% endblock %}
+    </main>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+    
+    <!-- Compact Timezone Script -->
+    <script>
+        // All available timezones with their office hours
+        // Get PC's local timezone
+        const localTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        const localTimezoneLabel = new Date().toLocaleTimeString('en-US', {
+            timeZoneName: 'short'
+        }).split(' ').pop();
+        
+        const allTimezones = [
+            { label: localTimezoneLabel, zone: 'local', officeHours: { start: 9, end: 17 } },
+            { label: 'PST', zone: 'America/Los_Angeles', officeHours: { start: 9, end: 17 } },
+            { label: 'MST', zone: 'America/Denver', officeHours: { start: 9, end: 17 } },
+            { label: 'CST', zone: 'America/Chicago', officeHours: { start: 9, end: 17 } },
+            { label: 'EST', zone: 'America/New_York', officeHours: { start: 9, end: 17 } },
+            { label: 'GMT', zone: 'GMT', officeHours: { start: 9, end: 17 } },
+            { label: 'CET', zone: 'Europe/Berlin', officeHours: { start: 9, end: 17 } },
+            { label: 'EET', zone: 'Europe/Athens', officeHours: { start: 9, end: 17 } },
+            { label: 'AEST', zone: 'Australia/Sydney', officeHours: { start: 9, end: 17 } },
+            { label: 'ACST', zone: 'Australia/Adelaide', officeHours: { start: 9, end: 17 } },
+            { label: 'AWST', zone: 'Australia/Perth', officeHours: { start: 9, end: 17 } }
+        ];
+        
+        let currentPairIndex = 0;
+        
+        function getTimeInTimezone(timezone) {
+            const now = new Date();
+            
+            // If it's the local timezone, use PC's local time
+            if (timezone.zone === 'local') {
+                return now.toLocaleTimeString('en-US', {
+                    hour12: true,
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            }
+            
+            return now.toLocaleTimeString('en-US', {
+                timeZone: timezone.zone,
+                hour12: true,
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+        
+        function isOfficeHours(timezone) {
+            const now = new Date();
+            
+            // For local timezone, use PC's local time
+            if (timezone.zone === 'local') {
+                const hour = now.getHours();
+                return hour >= timezone.officeHours.start && hour < timezone.officeHours.end;
+            }
+            
+            const timeInZone = new Date(now.toLocaleString('en-US', { timeZone: timezone.zone }));
+            const hour = timeInZone.getHours();
+            return hour >= timezone.officeHours.start && hour < timezone.officeHours.end;
+        }
+        
+        function findBestCallingTimes() {
+            const now = new Date();
+            const pcHour = now.getHours();
+            
+            // Always prioritize showing local timezone first
+            let bestPairs = [];
+            
+            // Primary pair: Local timezone with a complementary timezone
+            if (pcHour >= 6 && pcHour < 12) {
+                // Morning: Show local time with EST
+                bestPairs = [
+                    { primary: allTimezones[0], secondary: allTimezones[4] }, // Local ↔ EST
+                    { primary: allTimezones[0], secondary: allTimezones[6] }, // Local ↔ GMT
+                    { primary: allTimezones[0], secondary: allTimezones[8] }  // Local ↔ AEST
+                ];
+            } else if (pcHour >= 12 && pcHour < 18) {
+                // Afternoon: Show local time with GMT
+                bestPairs = [
+                    { primary: allTimezones[0], secondary: allTimezones[6] }, // Local ↔ GMT
+                    { primary: allTimezones[0], secondary: allTimezones[7] }, // Local ↔ CET
+                    { primary: allTimezones[0], secondary: allTimezones[9] }  // Local ↔ AEST
+                ];
+            } else if (pcHour >= 18 && pcHour < 24) {
+                // Evening: Show local time with CET
+                bestPairs = [
+                    { primary: allTimezones[0], secondary: allTimezones[7] }, // Local ↔ CET
+                    { primary: allTimezones[0], secondary: allTimezones[8] }, // Local ↔ EET
+                    { primary: allTimezones[0], secondary: allTimezones[10] } // Local ↔ AWST
+                ];
+            } else {
+                // Night: Show local time with AEST
+                bestPairs = [
+                    { primary: allTimezones[0], secondary: allTimezones[8] }, // Local ↔ AEST
+                    { primary: allTimezones[0], secondary: allTimezones[6] }, // Local ↔ GMT
+                    { primary: allTimezones[0], secondary: allTimezones[7] }  // Local ↔ CET
+                ];
+            }
+            
+            return bestPairs;
+        }
+        
+        function resetToBestCallingTimes() {
+            const bestPairs = findBestCallingTimes();
+            currentPairIndex = 0; // Reset to first pair
+            updateCompactTimezones();
+            
+            // Add animation to the clock icon
+            const clockIcon = document.querySelector('.timezone-icon.clickable');
+            clockIcon.style.transform = 'rotate(360deg)';
+            setTimeout(() => {
+                clockIcon.style.transform = 'rotate(0deg)';
+            }, 500);
+        }
+        
+        function updateCompactTimezones() {
+            const bestPairs = findBestCallingTimes();
+            const currentPair = bestPairs[currentPairIndex % bestPairs.length];
+            
+            try {
+                // Update primary timezone
+                const primaryTime = getTimeInTimezone(currentPair.primary);
+                document.getElementById('primary-label').textContent = currentPair.primary.label;
+                document.getElementById('primary-time').textContent = primaryTime;
+                
+                // Update secondary timezone
+                const secondaryTime = getTimeInTimezone(currentPair.secondary);
+                document.getElementById('secondary-label').textContent = currentPair.secondary.label;
+                document.getElementById('secondary-time').textContent = secondaryTime;
+                
+                // Highlight if in office hours
+                const primaryItem = document.getElementById('primary-timezone');
+                const secondaryItem = document.getElementById('secondary-timezone');
+                
+                if (isOfficeHours(currentPair.primary)) {
+                    primaryItem.style.background = 'rgba(76, 175, 80, 0.3)'; // Green for office hours
+                } else {
+                    primaryItem.style.background = 'rgba(255,255,255,0.1)';
+                }
+                
+                if (isOfficeHours(currentPair.secondary)) {
+                    secondaryItem.style.background = 'rgba(76, 175, 80, 0.3)'; // Green for office hours
+                } else {
+                    secondaryItem.style.background = 'rgba(255,255,255,0.1)';
+                }
+                
+            } catch (e) {
+                console.log('Error updating compact timezones:', e);
+            }
+        }
+        
+        function cycleTimezones() {
+            const bestPairs = findBestCallingTimes();
+            currentPairIndex = (currentPairIndex + 1) % bestPairs.length;
+            updateCompactTimezones();
+            
+            // Add a brief animation to the toggle button
+            const toggle = document.querySelector('.compact-timezone-toggle');
+            toggle.style.transform = 'rotate(360deg)';
+            setTimeout(() => {
+                toggle.style.transform = 'rotate(0deg)';
+            }, 300);
+        }
+        
+        // Initialize and start updating
+        document.addEventListener('DOMContentLoaded', function() {
+            updateCompactTimezones();
+            
+            // Update every minute to keep times current
+            setInterval(updateCompactTimezones, 60000);
+        });
+    </script>
+    
+    {% block scripts %}{% endblock %}
+    {% block extra_js %}{% endblock %}
+</body>
+</html> 

@@ -1,0 +1,143 @@
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-clipboard-list me-2"></i>{{ task.title }}
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <!-- Task Description -->
+                        <div class="mb-4">
+                            <h6 class="text-muted">Description</h6>
+                            <p class="mb-0">{{ task.description or 'No description provided.' }}</p>
+                        </div>
+
+
+
+                        <!-- Client Information -->
+                        {% if task.client_name %}
+                        <div class="mb-4">
+                            <h6 class="text-muted">Client</h6>
+                            <p class="mb-0">
+                                <i class="fas fa-user me-2"></i>{{ task.client_name }}
+                                {% if task.client_email %}
+                                <br><small class="text-muted"><i class="fas fa-envelope me-1"></i>{{ task.client_email }}</small>
+                                {% endif %}
+                                {% if task.client_phone %}
+                                <br><small class="text-muted"><i class="fas fa-phone me-1"></i>{{ task.client_phone }}</small>
+                                {% endif %}
+                            </p>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-4">
+                        <!-- Task Status -->
+                        <div class="mb-3">
+                            <h6 class="text-muted">Status</h6>
+                            <span class="badge {{ task.get_status_color() }} fs-6">
+                                {{ task.status.replace('_', ' ').title() }}
+                            </span>
+                        </div>
+
+                        <!-- Task Priority -->
+                        <div class="mb-3">
+                            <h6 class="text-muted">Priority</h6>
+                            <span class="badge {{ task.get_priority_color() }} fs-6">
+                                {{ task.priority.title() }}
+                            </span>
+                        </div>
+
+                        <!-- Task Type -->
+                        <div class="mb-3">
+                            <h6 class="text-muted">Type</h6>
+                            <span class="badge bg-secondary fs-6">
+                                {{ task.task_type.replace('_', ' ').title() }}
+                            </span>
+                        </div>
+
+                        <!-- Due Date -->
+                        {% if task.due_date %}
+                        <div class="mb-3">
+                            <h6 class="text-muted">Due Date</h6>
+                            <p class="mb-0 {% if task.due_date < today %}text-danger{% endif %}">
+                                <i class="fas fa-calendar me-1"></i>{{ task.due_date.strftime('%Y-%m-%d') }}
+                            </p>
+                        </div>
+                        {% endif %}
+
+                        <!-- Assigned To -->
+                        <div class="mb-3">
+                            <h6 class="text-muted">Assigned To</h6>
+                            <p class="mb-0">
+                                {% if assigned_user %}
+                                <i class="fas fa-user me-1"></i>{{ assigned_user.get_full_name() }}
+                                {% else %}
+                                <span class="text-muted">Unassigned</span>
+                                {% endif %}
+                            </p>
+                        </div>
+
+                        <!-- Created Date -->
+                        <div class="mb-3">
+                            <h6 class="text-muted">Created</h6>
+                            <p class="mb-0">
+                                <i class="fas fa-calendar-plus me-1"></i>{{ task.created_at.strftime('%Y-%m-%d %H:%M') }}
+                            </p>
+                        </div>
+
+                        <!-- Start Date -->
+                        {% if task.start_date %}
+                        <div class="mb-3">
+                            <h6 class="text-muted">Started</h6>
+                            <p class="mb-0">
+                                <i class="fas fa-play me-1"></i>{{ task.start_date.strftime('%Y-%m-%d') }}
+                            </p>
+                        </div>
+                        {% endif %}
+
+                        <!-- Completed Date -->
+                        {% if task.completed_at %}
+                        <div class="mb-3">
+                            <h6 class="text-muted">Completed</h6>
+                            <p class="mb-0">
+                                <i class="fas fa-check me-1"></i>{{ task.completed_at.strftime('%Y-%m-%d %H:%M') }}
+                            </p>
+                        </div>
+                        {% endif %}
+
+
+                    </div>
+                </div>
+
+                <!-- Task Actions -->
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <hr>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-muted mb-0">Actions</h6>
+                            </div>
+                            <div class="btn-group" role="group">
+                                {% if task.status == 'pending' %}
+                                <button class="btn btn-outline-success" onclick="startTask({{ task.id }})">
+                                    <i class="fas fa-play me-1"></i>Start Task
+                                </button>
+                                {% elif task.status == 'in_progress' %}
+                                <button class="btn btn-outline-warning" onclick="completeTask({{ task.id }})">
+                                    <i class="fas fa-check me-1"></i>Complete Task
+                                </button>
+                                {% endif %}
+                                
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div> 

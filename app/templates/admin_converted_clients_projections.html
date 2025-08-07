@@ -1,0 +1,275 @@
+{% extends "base.html" %}
+
+{% block title %}Client Projections Overview{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2><i class="fas fa-chart-bar"></i> Client Projections Overview</h2>
+                <div>
+                    <div class="input-group" style="width: 200px;">
+                        <input type="month" class="form-control" id="monthSelector" 
+                               value="{{ selected_month.strftime('%Y-%m') }}" 
+                               onchange="window.location.href='?month=' + this.value">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Global Projections Overview -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i class="fas fa-globe"></i> Global Client Projections - {{ selected_month.strftime('%B %Y') }}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="card h-100 border-{{ 'success' if global_projections.revenue.completion >= 100 else 'warning' if global_projections.revenue.completion >= 75 else 'info' if global_projections.revenue.completion >= 50 else 'danger' }}">
+                                <div class="card-header bg-{{ 'success' if global_projections.revenue.completion >= 100 else 'warning' if global_projections.revenue.completion >= 75 else 'info' if global_projections.revenue.completion >= 50 else 'danger' }} text-white">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-dollar-sign"></i> Total Revenue
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row text-center">
+                                        <div class="col-6">
+                                            <h6 class="text-muted">Target</h6>
+                                            <h4 class="text-primary">${{ "{:,}".format(global_projections.revenue.target) }}</h4>
+                                        </div>
+                                        <div class="col-6">
+                                            <h6 class="text-muted">Actual</h6>
+                                            <h4 class="text-{{ 'success' if global_projections.revenue.completion >= 100 else 'warning' if global_projections.revenue.completion >= 75 else 'info' if global_projections.revenue.completion >= 50 else 'danger' }}">${{ "{:,}".format(global_projections.revenue.actual) }}</h4>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Progress Bar -->
+                                    <div class="mt-3">
+                                        <div class="d-flex justify-content-between mb-1">
+                                            <span class="text-muted">Progress</span>
+                                            <span class="text-{{ 'success' if global_projections.revenue.completion >= 100 else 'warning' if global_projections.revenue.completion >= 75 else 'info' if global_projections.revenue.completion >= 50 else 'danger' }} fw-bold">{{ "%.1f"|format(global_projections.revenue.completion) }}%</span>
+                                        </div>
+                                        <div class="progress" style="height: 8px;">
+                                            <div class="progress-bar bg-{{ 'success' if global_projections.revenue.completion >= 100 else 'warning' if global_projections.revenue.completion >= 75 else 'info' if global_projections.revenue.completion >= 50 else 'danger' }}" 
+                                                 style="width: {{ global_projections.revenue.completion }}%">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Status Badge -->
+                                    <div class="mt-2 text-center">
+                                        {% if global_projections.revenue.completion >= 100 %}
+                                            <span class="badge bg-success">Target Achieved!</span>
+                                        {% elif global_projections.revenue.completion >= 75 %}
+                                            <span class="badge bg-warning">On Track</span>
+                                        {% elif global_projections.revenue.completion >= 50 %}
+                                            <span class="badge bg-info">In Progress</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Needs Attention</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="card h-100 border-{{ 'success' if global_projections.work_volume.completion >= 100 else 'warning' if global_projections.work_volume.completion >= 75 else 'info' if global_projections.work_volume.completion >= 50 else 'danger' }}">
+                                <div class="card-header bg-{{ 'success' if global_projections.work_volume.completion >= 100 else 'warning' if global_projections.work_volume.completion >= 75 else 'info' if global_projections.work_volume.completion >= 50 else 'danger' }} text-white">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-briefcase"></i> Total Work Volume
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row text-center">
+                                        <div class="col-6">
+                                            <h6 class="text-muted">Target</h6>
+                                            <h4 class="text-primary">{{ "{:,}".format(global_projections.work_volume.target) }}</h4>
+                                        </div>
+                                        <div class="col-6">
+                                            <h6 class="text-muted">Actual</h6>
+                                            <h4 class="text-{{ 'success' if global_projections.work_volume.completion >= 100 else 'warning' if global_projections.work_volume.completion >= 75 else 'info' if global_projections.work_volume.completion >= 50 else 'danger' }}">{{ "{:,}".format(global_projections.work_volume.actual) }}</h4>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Progress Bar -->
+                                    <div class="mt-3">
+                                        <div class="d-flex justify-content-between mb-1">
+                                            <span class="text-muted">Progress</span>
+                                            <span class="text-{{ 'success' if global_projections.work_volume.completion >= 100 else 'warning' if global_projections.work_volume.completion >= 75 else 'info' if global_projections.work_volume.completion >= 50 else 'danger' }} fw-bold">{{ "%.1f"|format(global_projections.work_volume.completion) }}%</span>
+                                        </div>
+                                        <div class="progress" style="height: 8px;">
+                                            <div class="progress-bar bg-{{ 'success' if global_projections.work_volume.completion >= 100 else 'warning' if global_projections.work_volume.completion >= 75 else 'info' if global_projections.work_volume.completion >= 50 else 'danger' }}" 
+                                                 style="width: {{ global_projections.work_volume.completion }}%">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Status Badge -->
+                                    <div class="mt-2 text-center">
+                                        {% if global_projections.work_volume.completion >= 100 %}
+                                            <span class="badge bg-success">Target Achieved!</span>
+                                        {% elif global_projections.work_volume.completion >= 75 %}
+                                            <span class="badge bg-warning">On Track</span>
+                                        {% elif global_projections.work_volume.completion >= 50 %}
+                                            <span class="badge bg-info">In Progress</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Needs Attention</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="card h-100 border-{{ 'success' if global_projections.tasks.completion >= 100 else 'warning' if global_projections.tasks.completion >= 75 else 'info' if global_projections.tasks.completion >= 50 else 'danger' }}">
+                                <div class="card-header bg-{{ 'success' if global_projections.tasks.completion >= 100 else 'warning' if global_projections.tasks.completion >= 75 else 'info' if global_projections.tasks.completion >= 50 else 'danger' }} text-white">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-tasks"></i> Total Tasks
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row text-center">
+                                        <div class="col-6">
+                                            <h6 class="text-muted">Target</h6>
+                                            <h4 class="text-primary">{{ "{:,}".format(global_projections.tasks.target) }}</h4>
+                                        </div>
+                                        <div class="col-6">
+                                            <h6 class="text-muted">Actual</h6>
+                                            <h4 class="text-{{ 'success' if global_projections.tasks.completion >= 100 else 'warning' if global_projections.tasks.completion >= 75 else 'info' if global_projections.tasks.completion >= 50 else 'danger' }}">{{ "{:,}".format(global_projections.tasks.actual) }}</h4>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Progress Bar -->
+                                    <div class="mt-3">
+                                        <div class="d-flex justify-content-between mb-1">
+                                            <span class="text-muted">Progress</span>
+                                            <span class="text-{{ 'success' if global_projections.tasks.completion >= 100 else 'warning' if global_projections.tasks.completion >= 75 else 'info' if global_projections.tasks.completion >= 50 else 'danger' }} fw-bold">{{ "%.1f"|format(global_projections.tasks.completion) }}%</span>
+                                        </div>
+                                        <div class="progress" style="height: 8px;">
+                                            <div class="progress-bar bg-{{ 'success' if global_projections.tasks.completion >= 100 else 'warning' if global_projections.tasks.completion >= 75 else 'info' if global_projections.tasks.completion >= 50 else 'danger' }}" 
+                                                 style="width: {{ global_projections.tasks.completion }}%">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Status Badge -->
+                                    <div class="mt-2 text-center">
+                                        {% if global_projections.tasks.completion >= 100 %}
+                                            <span class="badge bg-success">Target Achieved!</span>
+                                        {% elif global_projections.tasks.completion >= 75 %}
+                                            <span class="badge bg-warning">On Track</span>
+                                        {% elif global_projections.tasks.completion >= 50 %}
+                                            <span class="badge bg-info">In Progress</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Needs Attention</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Individual Client Projections -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-list"></i> Individual Client Projections</h5>
+                </div>
+                <div class="card-body">
+                    {% if projections_by_client %}
+                        {% for client_id, data in projections_by_client.items() %}
+                        <div class="mb-4">
+                            <h6 class="text-primary mb-3">
+                                <i class="fas fa-user"></i> {{ data.client.client_name }} ({{ data.client.client_id }})
+                                <span class="badge bg-secondary">{{ data.client.converter.get_full_name() }}</span>
+                            </h6>
+                            
+                            <div class="row">
+                                {% for projection in data.projections %}
+                                <div class="col-md-4 mb-3">
+                                    <div class="card h-100 border-{{ projection.get_status_color() }}">
+                                        <div class="card-header bg-{{ projection.get_status_color() }} text-white">
+                                            <h6 class="mb-0">
+                                                <i class="fas fa-{{ 'dollar-sign' if projection.projection_type == 'revenue' else 'briefcase' if projection.projection_type == 'work_volume' else 'tasks' }}"></i>
+                                                {{ projection.projection_type|replace('_', ' ')|title }}
+                                            </h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row text-center">
+                                                <div class="col-6">
+                                                    <h6 class="text-muted">Target</h6>
+                                                    <h4 class="text-primary">
+                                                        {% if projection.projection_type == 'revenue' %}
+                                                            ${{ "{:,}".format(projection.target_value) }}
+                                                        {% else %}
+                                                            {{ projection.target_value }}
+                                                        {% endif %}
+                                                    </h4>
+                                                </div>
+                                                <div class="col-6">
+                                                    <h6 class="text-muted">Actual</h6>
+                                                    <h4 class="text-{{ projection.get_status_color() }}">
+                                                        {% if projection.projection_type == 'revenue' %}
+                                                            ${{ "{:,}".format(projection.actual_value) }}
+                                                        {% else %}
+                                                            {{ projection.actual_value }}
+                                                        {% endif %}
+                                                    </h4>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Progress Bar -->
+                                            <div class="mt-3">
+                                                <div class="d-flex justify-content-between mb-1">
+                                                    <span class="text-muted">Progress</span>
+                                                    <span class="text-{{ projection.get_status_color() }} fw-bold">{{ "%.0f"|format(projection.completion_percentage) }}%</span>
+                                                </div>
+                                                <div class="progress" style="height: 8px;">
+                                                    <div class="progress-bar bg-{{ projection.get_status_color() }}" 
+                                                         style="width: {{ projection.completion_percentage }}%">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Status Badge -->
+                                            <div class="mt-2 text-center">
+                                                {% if projection.completion_percentage >= 100 %}
+                                                    <span class="badge bg-success">Target Achieved!</span>
+                                                {% elif projection.completion_percentage >= 75 %}
+                                                    <span class="badge bg-warning">On Track</span>
+                                                {% elif projection.completion_percentage >= 50 %}
+                                                    <span class="badge bg-info">In Progress</span>
+                                                {% else %}
+                                                    <span class="badge bg-danger">Needs Attention</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-chart-bar fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No client projections found for {{ selected_month.strftime('%B %Y') }}</h5>
+                            <p class="text-muted">Users will set projections for their converted clients here.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

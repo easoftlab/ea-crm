@@ -1,0 +1,236 @@
+{% extends 'base.html' %}
+{% block title %}📋 Tasks - Production{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4">📋 My Tasks</h1>
+            <p class="text-muted">Manage your assigned production tasks and track progress.</p>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+                        <div class="col-md-4">
+                            <label for="status" class="form-label">Status Filter</label>
+                            <select class="form-select" id="status" name="status">
+                                <option value="">All Statuses</option>
+                                <option value="pending" {% if request.args.get('status') == 'pending' %}selected{% endif %}>Pending</option>
+                                <option value="in_progress" {% if request.args.get('status') == 'in_progress' %}selected{% endif %}>In Progress</option>
+                                <option value="completed" {% if request.args.get('status') == 'completed' %}selected{% endif %}>Completed</option>
+                                <option value="cancelled" {% if request.args.get('status') == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="priority" class="form-label">Priority Filter</label>
+                            <select class="form-select" id="priority" name="priority">
+                                <option value="">All Priorities</option>
+                                <option value="low" {% if request.args.get('priority') == 'low' %}selected{% endif %}>Low</option>
+                                <option value="medium" {% if request.args.get('priority') == 'medium' %}selected{% endif %}>Medium</option>
+                                <option value="high" {% if request.args.get('priority') == 'high' %}selected{% endif %}>High</option>
+                                <option value="urgent" {% if request.args.get('priority') == 'urgent' %}selected{% endif %}>Urgent</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">&nbsp;</label>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary">🔍 Filter</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tasks List -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">📋 Assigned Tasks ({{ tasks|length }})</h5>
+                    <div>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="refreshTasks()">
+                            🔄 Refresh
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if tasks %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>📋 Task</th>
+                                        <th>👥 Client</th>
+                                        <th>📊 Status</th>
+                                        <th>⚡ Priority</th>
+                                        <th>📅 Due Date</th>
+                                        <th>📎 Attachments</th>
+                                        <th>⚡ Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for task in tasks %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ task.title }}</strong>
+                                            {% if task.description %}
+                                                <br><small class="text-muted">{{ task.description[:100] }}{% if task.description|length > 100 %}...{% endif %}</small>
+                                            {% endif %}
+                                            <br><small class="text-muted">Type: {{ task.task_type.replace('_', ' ').title() }}</small>
+                                        </td>
+                                        <td>
+                                            {% if task.client_id %}
+                                                <span class="badge bg-secondary">{{ task.client_id }}</span>
+                                            {% else %}
+                                                <span class="text-muted">No Client ID</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{{ task.get_status_color() }}">
+                                                {{ task.status.replace('_', ' ').title() }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{{ task.get_priority_color() }}">
+                                                {{ task.priority.title() }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if task.due_date %}
+                                                {% set days_until = (task.due_date - now.date()).days %}
+                                                {% if days_until < 0 %}
+                                                    <span class="text-danger">Overdue</span>
+                                                {% elif days_until == 0 %}
+                                                    <span class="text-warning">Due Today</span>
+                                                {% elif days_until <= 3 %}
+                                                    <span class="text-warning">{{ days_until }} days</span>
+                                                {% else %}
+                                                    <span class="text-muted">{{ task.due_date.strftime('%Y-%m-%d') }}</span>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="text-muted">No due date</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if task.attachments %}
+                                                <span class="badge bg-info">{{ task.attachments|length }} files</span>
+                                            {% else %}
+                                                <span class="text-muted">No files</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a href="{{ url_for('production.view_task', task_id=task.id) }}" 
+                                                   class="btn btn-sm btn-outline-primary">👁️ View & Reply</a>
+                                                <button class="btn btn-sm btn-outline-success" 
+                                                        onclick="updateTaskStatus('{{ task.id }}', 'in_progress')"
+                                                        {% if task.status == 'in_progress' %}disabled{% endif %}>
+                                                    ▶️ Start
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-warning" 
+                                                        onclick="updateTaskStatus('{{ task.id }}', 'completed')"
+                                                        {% if task.status == 'completed' %}disabled{% endif %}>
+                                                    ✅ Complete
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <p class="text-muted">No tasks found matching your filters.</p>
+                            {% if request.args.get('status') or request.args.get('priority') %}
+                                <a href="{{ url_for('production.tasks') }}" class="btn btn-outline-primary">
+                                    🔍 Clear Filters
+                                </a>
+                            {% else %}
+                                <p class="text-muted">Tasks will appear here when assigned by your manager.</p>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Task Statistics -->
+    <div class="row mt-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h5 class="card-title">📋 Total</h5>
+                    <h3 class="card-text">{{ tasks|length }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body text-center">
+                    <h5 class="card-title">⏳ Pending</h5>
+                    <h3 class="card-text">{{ tasks|selectattr('status', 'equalto', 'pending')|list|length }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h5 class="card-title">🔄 In Progress</h5>
+                    <h3 class="card-text">{{ tasks|selectattr('status', 'equalto', 'in_progress')|list|length }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h5 class="card-title">✅ Completed</h5>
+                    <h3 class="card-text">{{ tasks|selectattr('status', 'equalto', 'completed')|list|length }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function updateTaskStatus(taskId, status) {
+    if (confirm(`Are you sure you want to mark this task as ${status.replace('_', ' ')}?`)) {
+        const formData = new FormData();
+        formData.append('status', status);
+        
+        fetch(`/production/tasks/${taskId}/update`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('Failed to update task status. Please try again.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to update task status. Please try again.');
+        });
+    }
+}
+
+function refreshTasks() {
+    location.reload();
+}
+
+// Auto-refresh tasks every 30 seconds
+setTimeout(function() {
+    location.reload();
+}, 30000);
+</script>
+{% endblock %} 

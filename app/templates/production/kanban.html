@@ -1,0 +1,572 @@
+{% extends "base.html" %}
+
+{% block title %}Kanban Board - Personal Task Management{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">
+                    <i class="fas fa-columns"></i> My Kanban Board
+                </h1>
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-outline-primary" id="refresh-kanban">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                    <button type="button" class="btn btn-outline-info" id="toggle-compact">
+                        <i class="fas fa-compress-alt"></i> Compact View
+                    </button>
+                    <button type="button" class="btn btn-outline-success" id="export-kanban">
+                        <i class="fas fa-download"></i> Export
+                    </button>
+                    <button type="button" class="btn btn-outline-warning" id="ai-summary">
+                        <i class="fas fa-brain"></i> AI Summary
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Kanban Board -->
+    <div class="row">
+        <div class="col-12">
+            <div id="kanban-board" class="kanban-container" style="display: flex; gap: 1rem; overflow-x: auto; padding: 1rem 0; min-height: 600px; background: #f8f9fa; border-radius: 8px; margin: 0 -0.5rem;">
+                <!-- Columns will be dynamically loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-chart-pie"></i> Board Statistics
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row" id="kanban-stats">
+                        <!-- Statistics will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Task Details Modal -->
+<div class="modal fade" id="taskDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Task Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="task-details-content">
+                <!-- Task details will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="edit-task">Edit Task</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Edit Modal -->
+<div class="modal fade" id="quickEditModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Quick Edit Task</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="quick-edit-form">
+                    <input type="hidden" id="edit-task-id">
+                    <div class="mb-3">
+                        <label for="edit-task-title" class="form-label">Title</label>
+                        <input type="text" class="form-control" id="edit-task-title" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-task-description" class="form-label">Description</label>
+                        <textarea class="form-control" id="edit-task-description" rows="3"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit-task-priority" class="form-label">Priority</label>
+                                <select class="form-select" id="edit-task-priority">
+                                    <option value="low">Low</option>
+                                    <option value="medium">Medium</option>
+                                    <option value="high">High</option>
+                                    <option value="urgent">Urgent</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit-task-due-date" class="form-label">Due Date</label>
+                                <input type="date" class="form-control" id="edit-task-due-date">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit-task-estimated-hours" class="form-label">Estimated Hours</label>
+                                <input type="number" class="form-control" id="edit-task-estimated-hours" min="0" step="0.5">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit-task-workflow-stage" class="form-label">Workflow Stage</label>
+                                <select class="form-select" id="edit-task-workflow-stage">
+                                    <option value="planning">Planning</option>
+                                    <option value="in_progress">In Progress</option>
+                                    <option value="review">Review</option>
+                                    <option value="completed">Completed</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="save-quick-edit">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Task Modal -->
+<div class="modal fade" id="addTaskModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Task</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="add-task-form">
+                    <div class="mb-3">
+                        <label for="new-task-title" class="form-label">Title</label>
+                        <input type="text" class="form-control" id="new-task-title" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="new-task-description" class="form-label">Description</label>
+                        <textarea class="form-control" id="new-task-description" rows="3"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="new-task-priority" class="form-label">Priority</label>
+                                <select class="form-select" id="new-task-priority">
+                                    <option value="medium">Medium</option>
+                                    <option value="low">Low</option>
+                                    <option value="high">High</option>
+                                    <option value="urgent">Urgent</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="new-task-due-date" class="form-label">Due Date</label>
+                                <input type="date" class="form-control" id="new-task-due-date">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="new-task-estimated-hours" class="form-label">Estimated Hours</label>
+                                <input type="number" class="form-control" id="new-task-estimated-hours" value="1" min="0" step="0.5">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="new-task-column" class="form-label">Start Column</label>
+                                <select class="form-select" id="new-task-column">
+                                    <option value="todo">To Do</option>
+                                    <option value="backlog">Backlog</option>
+                                    <option value="in_progress">In Progress</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="save-new-task">Add Task</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+.kanban-container {
+    display: flex !important;
+    gap: 1rem !important;
+    overflow-x: auto !important;
+    padding: 1rem 0 !important;
+    min-height: 600px !important;
+    background: #f8f9fa !important;
+    border-radius: 8px !important;
+    margin: 0 -0.5rem !important;
+}
+
+.kanban-column {
+    flex: 0 0 320px !important;
+    background: white !important;
+    border-radius: 8px !important;
+    padding: 1rem !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
+    margin: 0 0.5rem !important;
+    border: 1px solid #e9ecef !important;
+}
+
+.kanban-column-header {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: flex-start !important;
+    margin-bottom: 1rem !important;
+    padding-bottom: 0.75rem !important;
+    border-bottom: 3px solid !important;
+    min-height: 60px !important;
+}
+
+.kanban-column-title {
+    font-weight: 600 !important;
+    margin: 0 !important;
+    font-size: 1rem !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+}
+
+.kanban-column-title i {
+    font-size: 1.1rem !important;
+}
+
+.kanban-column-count {
+    background: rgba(0,0,0,0.1) !important;
+    border-radius: 12px !important;
+    padding: 0.25rem 0.75rem !important;
+    font-size: 0.875rem !important;
+    font-weight: 600 !important;
+    min-width: 30px !important;
+    text-align: center !important;
+}
+
+.kanban-tasks-container {
+    min-height: 200px !important;
+    margin-bottom: 1rem !important;
+}
+
+.kanban-task {
+    background: white !important;
+    border-radius: 8px !important;
+    padding: 1rem !important;
+    margin-bottom: 0.75rem !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+    cursor: grab !important;
+    transition: all 0.2s ease !important;
+    border-left: 4px solid transparent !important;
+    border: 1px solid #e9ecef !important;
+}
+
+.kanban-task:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+    transform: translateY(-2px) !important;
+}
+
+.kanban-task.dragging {
+    opacity: 0.5 !important;
+    transform: rotate(2deg) !important;
+}
+
+.kanban-task-header {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: flex-start !important;
+    margin-bottom: 0.75rem !important;
+    gap: 0.5rem !important;
+}
+
+.kanban-task-title {
+    font-weight: 600 !important;
+    font-size: 0.95rem !important;
+    margin: 0 !important;
+    line-height: 1.3 !important;
+    color: #212529 !important;
+    flex: 1 !important;
+}
+
+.kanban-task-priority {
+    font-size: 0.7rem !important;
+    padding: 0.25rem 0.5rem !important;
+    border-radius: 4px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    white-space: nowrap !important;
+}
+
+.kanban-task-body {
+    font-size: 0.85rem !important;
+    color: #6c757d !important;
+    margin-bottom: 0.75rem !important;
+    line-height: 1.4 !important;
+    max-height: 60px !important;
+    overflow: hidden !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 3 !important;
+    -webkit-box-orient: vertical !important;
+}
+
+.kanban-task-footer {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    font-size: 0.8rem !important;
+    color: #6c757d !important;
+    margin-top: 0.5rem !important;
+    padding-top: 0.5rem !important;
+    border-top: 1px solid #f1f3f4 !important;
+}
+
+.kanban-task-due {
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.25rem !important;
+    font-size: 0.75rem !important;
+}
+
+.kanban-task-actions {
+    display: flex !important;
+    gap: 0.25rem !important;
+}
+
+.kanban-task-actions button {
+    padding: 0.25rem 0.5rem !important;
+    font-size: 0.75rem !important;
+    border-radius: 4px !important;
+}
+
+.kanban-drop-zone {
+    min-height: 80px !important;
+    border: 2px dashed #dee2e6 !important;
+    border-radius: 8px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: #6c757d !important;
+    font-size: 0.875rem !important;
+    background: #f8f9fa !important;
+    transition: all 0.2s ease !important;
+}
+
+.kanban-drop-zone.drag-over {
+    border-color: #0d6efd !important;
+    background-color: rgba(13, 110, 253, 0.1) !important;
+    color: #0d6efd !important;
+    transform: scale(1.02) !important;
+}
+
+/* Column colors */
+.kanban-column.backlog .kanban-column-header {
+    border-color: #6c757d !important;
+    color: #6c757d !important;
+}
+
+.kanban-column.backlog .kanban-column-count {
+    background: rgba(108, 117, 125, 0.2) !important;
+    color: #6c757d !important;
+}
+
+.kanban-column.todo .kanban-column-header {
+    border-color: #0d6efd !important;
+    color: #0d6efd !important;
+}
+
+.kanban-column.todo .kanban-column-count {
+    background: rgba(13, 110, 253, 0.2) !important;
+    color: #0d6efd !important;
+}
+
+.kanban-column.in_progress .kanban-column-header {
+    border-color: #0dcaf0 !important;
+    color: #0dcaf0 !important;
+}
+
+.kanban-column.in_progress .kanban-column-count {
+    background: rgba(13, 202, 240, 0.2) !important;
+    color: #0dcaf0 !important;
+}
+
+.kanban-column.review .kanban-column-header {
+    border-color: #ffc107 !important;
+    color: #ffc107 !important;
+}
+
+.kanban-column.review .kanban-column-count {
+    background: rgba(255, 193, 7, 0.2) !important;
+    color: #ffc107 !important;
+}
+
+.kanban-column.completed .kanban-column-header {
+    border-color: #198754 !important;
+    color: #198754 !important;
+}
+
+.kanban-column.completed .kanban-column-count {
+    background: rgba(25, 135, 84, 0.2) !important;
+    color: #198754 !important;
+}
+
+/* Priority colors */
+.priority-low {
+    background-color: #d1e7dd !important;
+    color: #0f5132 !important;
+}
+
+.priority-medium {
+    background-color: #fff3cd !important;
+    color: #664d03 !important;
+}
+
+.priority-high {
+    background-color: #f8d7da !important;
+    color: #721c24 !important;
+}
+
+.priority-urgent {
+    background-color: #f8d7da !important;
+    color: #721c24 !important;
+    font-weight: bold !important;
+    animation: pulse 2s infinite !important;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+}
+
+/* Compact view */
+.kanban-container.compact .kanban-column {
+    flex: 0 0 280px !important;
+    padding: 0.75rem !important;
+}
+
+.kanban-container.compact .kanban-task {
+    padding: 0.75rem !important;
+    margin-bottom: 0.5rem !important;
+}
+
+.kanban-container.compact .kanban-task-title {
+    font-size: 0.85rem !important;
+}
+
+.kanban-container.compact .kanban-task-body {
+    font-size: 0.8rem !important;
+    margin-bottom: 0.5rem !important;
+    max-height: 50px !important;
+}
+
+/* Statistics */
+.stat-card {
+    text-align: center !important;
+    padding: 1.5rem !important;
+    border-radius: 8px !important;
+    background: white !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
+    border: 1px solid #e9ecef !important;
+    transition: transform 0.2s ease !important;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px) !important;
+}
+
+.stat-card h3 {
+    margin: 0 !important;
+    font-size: 2.5rem !important;
+    font-weight: bold !important;
+    line-height: 1 !important;
+}
+
+.stat-card p {
+    margin: 0.5rem 0 0 0 !important;
+    color: #6c757d !important;
+    font-size: 0.9rem !important;
+    font-weight: 500 !important;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .kanban-container {
+        flex-direction: column !important;
+        gap: 1rem !important;
+        padding: 0.5rem !important;
+    }
+    
+    .kanban-column {
+        flex: none !important;
+        width: 100% !important;
+        margin: 0 !important;
+    }
+    
+    .stat-card {
+        margin-bottom: 1rem !important;
+    }
+}
+
+/* Loading state */
+.kanban-loading {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    min-height: 400px !important;
+    color: #6c757d !important;
+}
+
+.kanban-loading i {
+    font-size: 2rem !important;
+    animation: spin 1s linear infinite !important;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Empty state */
+.kanban-empty {
+    text-align: center !important;
+    padding: 2rem !important;
+    color: #6c757d !important;
+}
+
+.kanban-empty i {
+    font-size: 3rem !important;
+    margin-bottom: 1rem !important;
+    opacity: 0.5 !important;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/kanban-board.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Kanban page loaded successfully');
+});
+</script>
+{% endblock %} 

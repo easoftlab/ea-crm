@@ -1,0 +1,204 @@
+{% extends 'base.html' %}
+{% block title %}📁 File Upload - Production{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4">📁 File Upload</h1>
+            <p class="text-muted">Upload files to Dropbox or local storage for your production tasks.</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">📤 Upload Files</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data" id="uploadForm">
+                        <div class="mb-3">
+                            <label for="upload_type" class="form-label">Upload Destination</label>
+                            <select class="form-select" id="upload_type" name="upload_type" required>
+                                <option value="local">Local Storage</option>
+                                <option value="dropbox">Dropbox</option>
+                            </select>
+                            <div class="form-text">
+                                Choose where to upload your files. Dropbox uploads are automatically synced.
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="task_id" class="form-label">Associate with Task (Optional)</label>
+                            <select class="form-select" id="task_id" name="task_id">
+                                <option value="">No task association</option>
+                                <!-- Task options will be populated via JavaScript -->
+                            </select>
+                            <div class="form-text">
+                                Link uploaded files to a specific production task.
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="file" class="form-label">Select Files</label>
+                            <input type="file" class="form-control" id="file" name="file" multiple required>
+                            <div class="form-text">
+                                Supported formats: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT, PNG, JPG, GIF, ZIP, RAR
+                                <br>Maximum file size: 50MB per file
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="progress" id="uploadProgress" style="display: none;">
+                                <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary" id="uploadBtn">
+                            <span class="spinner-border spinner-border-sm me-2" id="uploadSpinner" style="display: none;"></span>
+                            Upload Files
+                        </button>
+                        <a href="{{ url_for('production.dashboard') }}" class="btn btn-secondary ms-2">Cancel</a>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">📤 Recent Uploads</h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_uploads %}
+                        <div class="list-group list-group-flush">
+                            {% for upload in recent_uploads %}
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <strong>{{ upload.original_filename }}</strong>
+                                        <br><small class="text-muted">{{ upload.get_file_size_mb() }} MB</small>
+                                        <br><small class="text-muted">Source: {{ upload.upload_source.title() }}</small>
+                                    </div>
+                                    <small class="text-muted">{{ upload.uploaded_at.strftime('%m/%d %H:%M') }}</small>
+                                </div>
+                                {% if upload.task %}
+                                    <div class="mt-2">
+                                        <span class="badge bg-info">Task: {{ upload.task.title }}</span>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center py-3">No recent uploads</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="mb-0">ℹ️ Upload Guidelines</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li class="mb-2">✅ Use descriptive filenames</li>
+                        <li class="mb-2">✅ Organize files by project/client</li>
+                        <li class="mb-2">✅ Keep file sizes under 50MB</li>
+                        <li class="mb-2">✅ Associate files with tasks when possible</li>
+                        <li class="mb-2">✅ Use Dropbox for important client files</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const uploadForm = document.getElementById('uploadForm');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const uploadSpinner = document.getElementById('uploadSpinner');
+    const uploadProgress = document.getElementById('uploadProgress');
+    const progressBar = uploadProgress.querySelector('.progress-bar');
+    const taskSelect = document.getElementById('task_id');
+
+    // Load user's tasks for task association
+    fetch('/production/api/tasks')
+        .then(response => response.json())
+        .then(data => {
+            data.tasks.forEach(task => {
+                const option = document.createElement('option');
+                option.value = task.id;
+                option.textContent = task.title;
+                taskSelect.appendChild(option);
+            });
+        })
+        .catch(error => console.error('Error loading tasks:', error));
+
+    uploadForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(uploadForm);
+        const files = document.getElementById('file').files;
+        
+        if (files.length === 0) {
+            alert('Please select at least one file to upload.');
+            return;
+        }
+
+        // Show progress
+        uploadBtn.disabled = true;
+        uploadSpinner.style.display = 'inline-block';
+        uploadProgress.style.display = 'block';
+        progressBar.style.width = '0%';
+
+        // Simulate upload progress
+        let progress = 0;
+        const progressInterval = setInterval(() => {
+            progress += Math.random() * 20;
+            if (progress > 90) progress = 90;
+            progressBar.style.width = progress + '%';
+        }, 200);
+
+        fetch('/production/upload', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.text())
+        .then(() => {
+            clearInterval(progressInterval);
+            progressBar.style.width = '100%';
+            
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
+        })
+        .catch(error => {
+            clearInterval(progressInterval);
+            console.error('Upload error:', error);
+            alert('Upload failed. Please try again.');
+            
+            uploadBtn.disabled = false;
+            uploadSpinner.style.display = 'none';
+            uploadProgress.style.display = 'none';
+        });
+    });
+
+    // File size validation
+    document.getElementById('file').addEventListener('change', function(e) {
+        const files = e.target.files;
+        const maxSize = 50 * 1024 * 1024; // 50MB
+        
+        for (let file of files) {
+            if (file.size > maxSize) {
+                alert(`File "${file.name}" is too large. Maximum size is 50MB.`);
+                e.target.value = '';
+                return;
+            }
+        }
+    });
+});
+</script>
+{% endblock %} 

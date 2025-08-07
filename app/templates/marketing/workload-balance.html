@@ -1,0 +1,314 @@
+{% extends "base.html" %}
+{% block title %}Workload Balance - Marketing{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">Workload Balance</h1>
+            <p class="text-muted">Manage workload distribution across marketing team members</p>
+        </div>
+        <div>
+            <a href="{{ url_for('marketing.team') }}" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left"></i> Back to Team
+            </a>
+        </div>
+    </div>
+
+    <!-- Workload Overview -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5 class="card-title text-primary">
+                        <i class="fas fa-users"></i> Team Members
+                    </h5>
+                    <h2 class="text-primary">{{ workload_data|length }}</h2>
+                    <p class="text-muted mb-0">Active members</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5 class="card-title text-warning">
+                        <i class="fas fa-tasks"></i> Total Active Leads
+                    </h5>
+                    <h2 class="text-warning">{{ workload_data|sum(attribute='active_leads') }}</h2>
+                    <p class="text-muted mb-0">Across all members</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5 class="card-title text-info">
+                        <i class="fas fa-phone"></i> Pending Calls
+                    </h5>
+                    <h2 class="text-info">{{ workload_data|sum(attribute='pending_calls') }}</h2>
+                    <p class="text-muted mb-0">To be made</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5 class="card-title text-success">
+                        <i class="fas fa-chart-line"></i> Avg Productivity
+                    </h5>
+                    <h2 class="text-success">{{ "%.0f"|format(workload_data|sum(attribute='productivity_score') / workload_data|length if workload_data else 0) }}%</h2>
+                    <p class="text-muted mb-0">Team average</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Workload Distribution -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-balance-scale"></i> Workload Distribution
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if workload_data %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Team Member</th>
+                            <th>Active Leads</th>
+                            <th>Pending Calls</th>
+                            <th>Today's Leads</th>
+                            <th>Today's Calls</th>
+                            <th>Productivity Score</th>
+                            <th>Workload Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for data in workload_data %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <img src="{{ data.member.get_profile_image_url() }}" 
+                                         class="rounded-circle me-2" 
+                                         width="32" height="32" 
+                                         alt="{{ data.member.get_full_name() }}">
+                                    <div>
+                                        <div class="fw-bold">{{ data.member.get_full_name() }}</div>
+                                        <small class="text-muted">{{ data.member.username }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge bg-primary">{{ data.active_leads }}</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-warning">{{ data.pending_calls }}</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-success">{{ data.today_leads }}</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-info">{{ data.today_calls }}</span>
+                            </td>
+                            <td>
+                                {% set score = data.productivity_score %}
+                                {% if score >= 80 %}
+                                    <span class="badge bg-success">{{ "%.0f"|format(score) }}%</span>
+                                {% elif score >= 60 %}
+                                    <span class="badge bg-warning">{{ "%.0f"|format(score) }}%</span>
+                                {% else %}
+                                    <span class="badge bg-danger">{{ "%.0f"|format(score) }}%</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if data.active_leads > 10 %}
+                                    <span class="badge bg-danger">Overloaded</span>
+                                {% elif data.active_leads > 5 %}
+                                    <span class="badge bg-warning">Moderate</span>
+                                {% else %}
+                                    <span class="badge bg-success">Available</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{{ url_for('marketing.team_member_performance', member_id=data.member.id) }}" 
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-chart-bar"></i> Performance
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary">
+                                        <i class="fas fa-redistribute"></i> Rebalance
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-balance-scale fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No workload data available</h5>
+                <p class="text-muted">Add team members to start tracking workload distribution</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Workload Analytics -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-pie text-primary"></i> Lead Distribution
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="leadDistributionChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-bar text-success"></i> Productivity Comparison
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="productivityChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Workload Recommendations -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-lightbulb text-warning"></i> Workload Recommendations
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Overloaded Members</h6>
+                            <ul class="list-group list-group-flush">
+                                {% for data in workload_data %}
+                                {% if data.active_leads > 10 %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span>{{ data.member.get_full_name() }}</span>
+                                    <span class="badge bg-danger">{{ data.active_leads }} leads</span>
+                                </li>
+                                {% endif %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Available Members</h6>
+                            <ul class="list-group list-group-flush">
+                                {% for data in workload_data %}
+                                {% if data.active_leads <= 3 %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span>{{ data.member.get_full_name() }}</span>
+                                    <span class="badge bg-success">{{ data.active_leads }} leads</span>
+                                </li>
+                                {% endif %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Lead Distribution Chart
+const leadCtx = document.getElementById('leadDistributionChart').getContext('2d');
+const leadChart = new Chart(leadCtx, {
+    type: 'doughnut',
+    data: {
+        labels: [{% for data in workload_data %}'{{ data.member.get_full_name() }}'{% if not loop.last %}, {% endif %}{% endfor %}],
+        datasets: [{
+            data: [{% for data in workload_data %}{{ data.active_leads }}{% if not loop.last %}, {% endif %}{% endfor %}],
+            backgroundColor: [
+                '#007bff', '#28a745', '#ffc107', '#dc3545', '#17a2b8',
+                '#6c757d', '#fd7e14', '#e83e8c', '#20c997', '#6f42c1'
+            ],
+            borderWidth: 2,
+            borderColor: '#fff'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+
+// Productivity Comparison Chart
+const productivityCtx = document.getElementById('productivityChart').getContext('2d');
+const productivityChart = new Chart(productivityCtx, {
+    type: 'bar',
+    data: {
+        labels: [{% for data in workload_data %}'{{ data.member.get_full_name() }}'{% if not loop.last %}, {% endif %}{% endfor %}],
+        datasets: [{
+            label: 'Productivity Score (%)',
+            data: [{% for data in workload_data %}{{ data.productivity_score }}{% if not loop.last %}, {% endif %}{% endfor %}],
+            backgroundColor: [
+                {% for data in workload_data %}
+                {% if data.productivity_score >= 80 %}
+                    'rgba(40, 167, 69, 0.7)'
+                {% elif data.productivity_score >= 60 %}
+                    'rgba(255, 193, 7, 0.7)'
+                {% else %}
+                    'rgba(220, 53, 69, 0.7)'
+                {% endif %}{% if not loop.last %}, {% endif %}
+                {% endfor %}
+            ],
+            borderColor: [
+                {% for data in workload_data %}
+                {% if data.productivity_score >= 80 %}
+                    'rgba(40, 167, 69, 1)'
+                {% elif data.productivity_score >= 60 %}
+                    'rgba(255, 193, 7, 1)'
+                {% else %}
+                    'rgba(220, 53, 69, 1)'
+                {% endif %}{% if not loop.last %}, {% endif %}
+                {% endfor %}
+            ],
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true,
+                max: 100
+            }
+        },
+        plugins: {
+            legend: {
+                display: false
+            }
+        }
+    }
+});
+</script>
+{% endblock %} 

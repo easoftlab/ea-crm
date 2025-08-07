@@ -1,0 +1,375 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Task - Productions{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="fas fa-edit text-primary"></i> Edit Task
+            </h1>
+            <p class="text-muted">Update task details and assignments</p>
+        </div>
+        <div>
+            <a href="{{ url_for('productions.task_management') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Task Management
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Task Edit Form -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-edit"></i> Edit Task: {{ task.title }}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row">
+                            <!-- Task Title -->
+                            <div class="col-md-12 mb-3">
+                                <label for="{{ form.title.id }}" class="form-label">{{ form.title.label }}</label>
+                                {{ form.title(class="form-control", placeholder="Enter task title") }}
+                                {% if form.title.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.title.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Task Description -->
+                            <div class="col-md-12 mb-3">
+                                <label for="{{ form.description.id }}" class="form-label">{{ form.description.label }}</label>
+                                {{ form.description(class="form-control", rows="4", placeholder="Describe the task requirements, specifications, and any special instructions") }}
+                                {% if form.description.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.description.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Task Type and Priority -->
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.task_type.id }}" class="form-label">{{ form.task_type.label }}</label>
+                                {{ form.task_type(class="form-select") }}
+                                {% if form.task_type.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.task_type.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.priority.id }}" class="form-label">{{ form.priority.label }}</label>
+                                {{ form.priority(class="form-select") }}
+                                {% if form.priority.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.priority.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Assignment and Due Date -->
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.assigned_to.id }}" class="form-label">{{ form.assigned_to.label }}</label>
+                                {{ form.assigned_to(class="form-select") }}
+                                {% if form.assigned_to.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.assigned_to.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.due_date.id }}" class="form-label">{{ form.due_date.label }}</label>
+                                {{ form.due_date(class="form-control", type="date") }}
+                                {% if form.due_date.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.due_date.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Client Information -->
+                            <div class="col-12">
+                                <h6 class="text-primary mb-3">
+                                    <i class="fas fa-user"></i> Client Information
+                                </h6>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.client_name.id }}" class="form-label">{{ form.client_name.label }}</label>
+                                {{ form.client_name(class="form-control", placeholder="Client name") }}
+                                {% if form.client_name.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.client_name.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.client_contact.id }}" class="form-label">{{ form.client_contact.label }}</label>
+                                {{ form.client_contact(class="form-control", placeholder="Contact person") }}
+                                {% if form.client_contact.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.client_contact.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.client_phone.id }}" class="form-label">{{ form.client_phone.label }}</label>
+                                {{ form.client_phone(class="form-control", placeholder="Phone number") }}
+                                {% if form.client_phone.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.client_phone.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.client_email.id }}" class="form-label">{{ form.client_email.label }}</label>
+                                {{ form.client_email(class="form-control", placeholder="Email address") }}
+                                {% if form.client_email.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.client_email.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Task Details -->
+                            <div class="col-12">
+                                <h6 class="text-primary mb-3">
+                                    <i class="fas fa-cog"></i> Task Details
+                                </h6>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.estimated_duration_hours.id }}" class="form-label">{{ form.estimated_duration_hours.label }}</label>
+                                {{ form.estimated_duration_hours(class="form-control", placeholder="Estimated hours", type="number", step="0.5", min="0") }}
+                                {% if form.estimated_duration_hours.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.estimated_duration_hours.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.project_id.id }}" class="form-label">{{ form.project_id.label }}</label>
+                                {{ form.project_id(class="form-control", placeholder="Project ID (optional)") }}
+                                {% if form.project_id.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.project_id.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.workflow_stage.id }}" class="form-label">{{ form.workflow_stage.label }}</label>
+                                {{ form.workflow_stage(class="form-select") }}
+                                {% if form.workflow_stage.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.workflow_stage.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- File Management -->
+                            <div class="col-12">
+                                <h6 class="text-primary mb-3">
+                                    <i class="fas fa-folder"></i> File Management
+                                </h6>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.lan_server_path.id }}" class="form-label">{{ form.lan_server_path.label }}</label>
+                                {{ form.lan_server_path(class="form-control", placeholder="LAN server path (optional)") }}
+                                {% if form.lan_server_path.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.lan_server_path.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.dropbox_path.id }}" class="form-label">{{ form.dropbox_path.label }}</label>
+                                {{ form.dropbox_path(class="form-control", placeholder="Dropbox path (optional)") }}
+                                {% if form.dropbox_path.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.dropbox_path.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Additional Settings -->
+                            <div class="col-12">
+                                <h6 class="text-primary mb-3">
+                                    <i class="fas fa-sliders-h"></i> Additional Settings
+                                </h6>
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <div class="form-check">
+                                    {{ form.auto_create_folders(class="form-check-input") }}
+                                    <label class="form-check-label" for="{{ form.auto_create_folders.id }}">
+                                        {{ form.auto_create_folders.label }}
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <div class="form-check">
+                                    {{ form.notify_assignee(class="form-check-input") }}
+                                    <label class="form-check-label" for="{{ form.notify_assignee.id }}">
+                                        {{ form.notify_assignee.label }}
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <div class="form-check">
+                                    {{ form.set_reminders(class="form-check-input") }}
+                                    <label class="form-check-label" for="{{ form.set_reminders.id }}">
+                                        {{ form.set_reminders.label }}
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('productions.task_management') }}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> {{ form.update.label }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Task Information -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-info-circle"></i> Task Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <strong>Created:</strong> {{ task.created_at.strftime('%Y-%m-%d %H:%M') }}
+                    </div>
+                    <div class="mb-3">
+                        <strong>Last Updated:</strong> {{ task.updated_at.strftime('%Y-%m-%d %H:%M') }}
+                    </div>
+                    {% if task.assigner %}
+                    <div class="mb-3">
+                        <strong>Created By:</strong> {{ task.assigner.get_full_name() }}
+                    </div>
+                    {% endif %}
+                    {% if task.assignee %}
+                    <div class="mb-3">
+                        <strong>Currently Assigned To:</strong> {{ task.assignee.get_full_name() }}
+                    </div>
+                    {% endif %}
+                    {% if task.completed_at %}
+                    <div class="mb-3">
+                        <strong>Completed:</strong> {{ task.completed_at.strftime('%Y-%m-%d %H:%M') }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Task Status -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-line"></i> Current Status
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <span class="badge {{ task.get_status_color() }}">{{ task.status.replace('_', ' ').title() }}</span>
+                    </div>
+                    <div class="mb-2">
+                        <span class="badge {{ task.get_priority_color() }}">{{ task.priority.title() }}</span>
+                    </div>
+                    <div class="mb-2">
+                        <span class="badge bg-secondary">{{ task.task_type.replace('_', ' ').title() }}</span>
+                    </div>
+                    {% if task.estimated_duration_hours %}
+                    <div class="mb-2">
+                        <strong>Estimated Duration:</strong> {{ task.estimated_duration_hours }} hours
+                    </div>
+                    {% endif %}
+                    {% if task.actual_duration_hours %}
+                    <div class="mb-2">
+                        <strong>Actual Duration:</strong> {{ task.actual_duration_hours }} hours
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-bolt"></i> Quick Actions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('productions.task_management') }}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-list"></i> View All Tasks
+                        </a>
+                        <a href="{{ url_for('productions.create_task') }}" class="btn btn-outline-success btn-sm">
+                            <i class="fas fa-plus"></i> Create New Task
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,1099 @@
+{% extends 'base.html' %}
+{% block title %}Task Details - {{ task.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <!-- Task Details -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">📋 {{ task.title }}</h4>
+                    <div>
+                        <a href="{{ url_for('production.tasks') }}" class="btn btn-outline-secondary btn-sm">
+                            <i class="fas fa-arrow-left"></i> Back to Tasks
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Task Status and Priority -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Status:</strong>
+                            <span class="badge bg-{{ task.get_status_color() }} ms-2">
+                                {{ task.status.replace('_', ' ').title() }}
+                            </span>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Priority:</strong>
+                            <span class="badge bg-{{ task.get_priority_color() }} ms-2">
+                                {{ task.priority.title() }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Task Description -->
+                    {% if task.description %}
+                    <div class="mb-3">
+                        <strong>Description:</strong>
+                        <p class="mt-2">{{ task.description }}</p>
+                    </div>
+                    {% endif %}
+
+                    <!-- Task Details -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Type:</strong> {{ task.task_type.replace('_', ' ').title() }}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Due Date:</strong> 
+                            {% if task.due_date %}
+                                {{ task.due_date.strftime('%Y-%m-%d') }}
+                            {% else %}
+                                <span class="text-muted">No due date</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Productivity Tracking Section -->
+                    <div class="mb-4">
+                        <div class="card border-primary">
+                            <div class="card-header bg-primary text-white">
+                                <h6 class="mb-0">⏱️ Productivity Tracking</h6>
+                            </div>
+                            <div class="card-body">
+                                <!-- Session Status -->
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <div id="session-status" class="alert alert-info" style="display: none;">
+                                            <strong>Session Status:</strong> <span id="session-status-text">No active session</span>
+                                        </div>
+                                    </div>
+
+                                </div>
+
+                                <!-- Timer Display -->
+                                <div class="row mb-3">
+                                    <div class="col-12">
+                                        <div class="text-center">
+                                            <div class="timer-display">
+                                                <h2 id="current-timer" class="text-primary">00:00:00</h2>
+                                                <div class="progress mb-2">
+                                                    <div id="timer-progress" class="progress-bar bg-primary" style="width: 0%"></div>
+                                                </div>
+                                                <small class="text-muted">Session Duration</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Session Controls -->
+                                <div class="row mb-3">
+                                    <div class="col-12">
+                                        <div class="btn-group w-100" role="group">
+                                            <button id="start-session-btn" class="btn btn-success" onclick="startSession()">
+                                                ▶️ Start Session
+                                            </button>
+                                            <button id="pause-session-btn" class="btn btn-warning" onclick="pauseSession()" style="display: none;">
+                                                ⏸️ Pause
+                                            </button>
+                                            <button id="resume-session-btn" class="btn btn-info" onclick="resumeSession()" style="display: none;">
+                                                ▶️ Resume
+                                            </button>
+                                            <button id="stop-session-btn" class="btn btn-danger" onclick="stopSession()" style="display: none;">
+                                                ⏹️ Stop
+                                            </button>
+                                            <button id="complete-session-btn" class="btn btn-primary" onclick="completeSession()" style="display: none;">
+                                                ✅ Complete
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Task Actions -->
+                    <div class="mb-3">
+                        <strong>Actions:</strong>
+                        <div class="btn-group mt-2" role="group">
+                            <button class="btn btn-sm btn-outline-success" 
+                                    onclick="updateTaskStatus('{{ task.id }}', 'in_progress')"
+                                    {% if task.status == 'in_progress' %}disabled{% endif %}>
+                                ▶️ Start Task
+                            </button>
+                            <button class="btn btn-sm btn-outline-warning" 
+                                    onclick="updateTaskStatus('{{ task.id }}', 'completed')"
+                                    {% if task.status == 'completed' %}disabled{% endif %}>
+                                ✅ Complete Task
+                            </button>
+                            <button class="btn btn-sm btn-outline-info" onclick="showTaskComments()">
+                                💬 Comments ({{ task_comments|length }})
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comments Section -->
+            <div class="card mt-4" id="comments-section" style="display: none;">
+                <div class="card-header">
+                    <h5 class="mb-0">💬 Task Comments</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Add Comment Form -->
+                    <div class="mb-3">
+                        <textarea id="comment-input" class="form-control" rows="3" 
+                                  placeholder="Add a comment..."></textarea>
+                        <div class="mt-2">
+                            <button class="btn btn-primary btn-sm" onclick="addComment()">
+                                💬 Add Comment
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Comments List -->
+                    <div id="comments-list">
+                        <!-- Comments will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+                            <!-- Task Info Sidebar -->
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">📊 Task Info</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <strong>Created:</strong><br>
+                                    <small class="text-muted">{{ task.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                                </div>
+                                
+                                {% if task.assigned_to %}
+                                <div class="mb-3">
+                                    <strong>Assigned To:</strong><br>
+                                    <small class="text-muted">{{ assigned_user.get_full_name() if assigned_user else 'Unknown' }}</small>
+                                </div>
+                                {% endif %}
+
+                                {% if task.completed_at %}
+                                <div class="mb-3">
+                                    <strong>Completed:</strong><br>
+                                    <small class="text-muted">{{ task.completed_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                                </div>
+                                {% endif %}
+
+                                {% if task.client_id %}
+                                <div class="mb-3">
+                                    <strong>Client ID:</strong><br>
+                                    <span class="badge bg-secondary">{{ task.client_id }}</span>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Collaboration Status -->
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <h6 class="mb-0">👥 Collaboration</h6>
+                            </div>
+                            <div class="card-body">
+                                <div id="collaboration-status">
+                                    <div class="text-center">
+                                        <div class="spinner-border spinner-border-sm" role="status">
+                                            <span class="visually-hidden">Loading...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Active Users -->
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <h6 class="mb-0">🟢 Active Users</h6>
+                            </div>
+                            <div class="card-body">
+                                <div id="active-users-list">
+                                    <div class="text-center">
+                                        <div class="spinner-border spinner-border-sm" role="status">
+                                            <span class="visually-hidden">Loading...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Real-time Status -->
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <h6 class="mb-0">⚡ Real-time Status</h6>
+                            </div>
+                            <div class="card-body">
+                                <div id="real-time-status">
+                                    <div class="text-center">
+                                        <div class="spinner-border spinner-border-sm" role="status">
+                                            <span class="visually-hidden">Loading...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+    </div>
+</div>
+
+<!-- Comment Reply Modal -->
+<div class="modal fade" id="replyModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Reply to Comment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="reply-to-content" class="mb-3 p-2 bg-light rounded"></div>
+                <textarea id="reply-input" class="form-control" rows="3" 
+                          placeholder="Write your reply..."></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitReply()">Reply</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Comment Modal -->
+<div class="modal fade" id="editCommentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Comment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <textarea id="edit-comment-input" class="form-control" rows="3"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitEdit()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentTaskId = {{ task.id }};
+let currentCommentId = null;
+let currentParentCommentId = null;
+
+// Show/hide comments section
+function showTaskComments() {
+    const commentsSection = document.getElementById('comments-section');
+    if (commentsSection.style.display === 'none') {
+        commentsSection.style.display = 'block';
+        loadComments();
+    } else {
+        commentsSection.style.display = 'none';
+    }
+}
+
+// Load comments for the task
+function loadComments() {
+    fetch(`/production/api/tasks/${currentTaskId}/comments`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayComments(data.comments);
+            } else {
+                console.error('Failed to load comments:', data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error loading comments:', error);
+        });
+}
+
+// Display comments in the UI
+function displayComments(comments) {
+    const commentsList = document.getElementById('comments-list');
+    commentsList.innerHTML = '';
+
+    if (comments.length === 0) {
+        commentsList.innerHTML = '<p class="text-muted">No comments yet. Be the first to comment!</p>';
+        return;
+    }
+
+    comments.forEach(comment => {
+        const commentHtml = createCommentHtml(comment);
+        commentsList.innerHTML += commentHtml;
+    });
+}
+
+// Create HTML for a comment
+function createCommentHtml(comment) {
+    const editButton = comment.can_edit ? 
+        `<button class="btn btn-sm btn-outline-secondary ms-1" onclick="editComment(${comment.id}, '${comment.content.replace(/'/g, "\\'")}')">
+            <i class="fas fa-edit"></i>
+        </button>` : '';
+
+    const deleteButton = comment.can_delete ? 
+        `<button class="btn btn-sm btn-outline-danger ms-1" onclick="deleteComment(${comment.id})">
+            <i class="fas fa-trash"></i>
+        </button>` : '';
+
+    const editedBadge = comment.is_edited ? 
+        '<span class="badge bg-secondary ms-1">edited</span>' : '';
+
+    let repliesHtml = '';
+    if (comment.replies && comment.replies.length > 0) {
+        repliesHtml = '<div class="ms-4 mt-2">';
+        comment.replies.forEach(reply => {
+            const replyEditButton = reply.can_edit ? 
+                `<button class="btn btn-sm btn-outline-secondary ms-1" onclick="editComment(${reply.id}, '${reply.content.replace(/'/g, "\\'")}')">
+                    <i class="fas fa-edit"></i>
+                </button>` : '';
+
+            const replyDeleteButton = reply.can_delete ? 
+                `<button class="btn btn-sm btn-outline-danger ms-1" onclick="deleteComment(${reply.id})">
+                    <i class="fas fa-trash"></i>
+                </button>` : '';
+
+            const replyEditedBadge = reply.is_edited ? 
+                '<span class="badge bg-secondary ms-1">edited</span>' : '';
+
+            repliesHtml += `
+                <div class="border-start ps-3 mb-2">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <strong>${reply.user_name}</strong>
+                            <small class="text-muted ms-2">${formatDate(reply.created_at)}</small>
+                            ${replyEditedBadge}
+                        </div>
+                        <div>
+                            ${replyEditButton}
+                            ${replyDeleteButton}
+                        </div>
+                    </div>
+                    <p class="mb-1">${reply.content}</p>
+                </div>
+            `;
+        });
+        repliesHtml += '</div>';
+    }
+
+    return `
+        <div class="border-bottom pb-3 mb-3">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <strong>${comment.user_name}</strong>
+                    <small class="text-muted ms-2">${formatDate(comment.created_at)}</small>
+                    ${editedBadge}
+                </div>
+                <div>
+                    <button class="btn btn-sm btn-outline-primary" onclick="showReplyModal(${comment.id}, '${comment.user_name}')">
+                        <i class="fas fa-reply"></i> Reply
+                    </button>
+                    ${editButton}
+                    ${deleteButton}
+                </div>
+            </div>
+            <p class="mb-2">${comment.content}</p>
+            ${repliesHtml}
+        </div>
+    `;
+}
+
+// Add a new comment
+function addComment() {
+    const commentInput = document.getElementById('comment-input');
+    const content = commentInput.value.trim();
+
+    if (!content) {
+        alert('Please enter a comment');
+        return;
+    }
+
+    fetch(`/production/api/tasks/${currentTaskId}/comments`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            content: content
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            commentInput.value = '';
+            loadComments();
+        } else {
+            alert('Failed to add comment: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error adding comment:', error);
+        alert('Error adding comment');
+    });
+}
+
+// Show reply modal
+function showReplyModal(commentId, userName) {
+    currentParentCommentId = commentId;
+    document.getElementById('reply-to-content').innerHTML = `<strong>Replying to ${userName}</strong>`;
+    document.getElementById('reply-input').value = '';
+    new bootstrap.Modal(document.getElementById('replyModal')).show();
+}
+
+// Submit reply
+function submitReply() {
+    const replyInput = document.getElementById('reply-input');
+    const content = replyInput.value.trim();
+
+    if (!content) {
+        alert('Please enter a reply');
+        return;
+    }
+
+    fetch(`/production/api/tasks/${currentTaskId}/comments`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            content: content,
+            parent_comment_id: currentParentCommentId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            bootstrap.Modal.getInstance(document.getElementById('replyModal')).hide();
+            loadComments();
+        } else {
+            alert('Failed to add reply: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error adding reply:', error);
+        alert('Error adding reply');
+    });
+}
+
+// Edit comment
+function editComment(commentId, currentContent) {
+    currentCommentId = commentId;
+    document.getElementById('edit-comment-input').value = currentContent;
+    new bootstrap.Modal(document.getElementById('editCommentModal')).show();
+}
+
+// Submit edit
+function submitEdit() {
+    const editInput = document.getElementById('edit-comment-input');
+    const content = editInput.value.trim();
+
+    if (!content) {
+        alert('Please enter comment content');
+        return;
+    }
+
+    fetch(`/production/api/tasks/comments/${currentCommentId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            content: content
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            bootstrap.Modal.getInstance(document.getElementById('editCommentModal')).hide();
+            loadComments();
+        } else {
+            alert('Failed to edit comment: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error editing comment:', error);
+        alert('Error editing comment');
+    });
+}
+
+// Delete comment
+function deleteComment(commentId) {
+    if (!confirm('Are you sure you want to delete this comment?')) {
+        return;
+    }
+
+    fetch(`/production/api/tasks/comments/${commentId}`, {
+        method: 'DELETE'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            loadComments();
+        } else {
+            alert('Failed to delete comment: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error deleting comment:', error);
+        alert('Error deleting comment');
+    });
+}
+
+// Update task status
+function updateTaskStatus(taskId, status) {
+    fetch(`/production/api/tasks/${taskId}/status`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            status: status
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // If starting the task, also start a fresh session
+            if (status === 'in_progress') {
+                startSession();
+            } else {
+                location.reload();
+            }
+        } else {
+            alert('Failed to update task status: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error updating task status:', error);
+        alert('Error updating task status');
+    });
+}
+
+// Format date for display
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleString();
+}
+
+// ===== PRODUCTIVITY TRACKING FUNCTIONS =====
+
+let sessionTimer = null;
+let sessionStartTime = null;
+let currentSessionId = null;
+let isSessionActive = false;
+let isSessionPaused = false;
+
+// Initialize productivity tracking
+document.addEventListener('DOMContentLoaded', function() {
+    checkSessionStatus();
+    updateTimerDisplay();
+    loadCollaborationData();
+    startRealTimeUpdates();
+});
+
+// Check current session status
+function checkSessionStatus() {
+    fetch(`/production/api/tasks/${currentTaskId}/session/status`)
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.has_session) {
+            currentSessionId = data.session_id;
+            isSessionActive = data.status === 'active';
+            isSessionPaused = data.status === 'paused';
+            sessionStartTime = new Date(data.start_time);
+            
+            updateSessionUI();
+            if (isSessionActive) {
+                startTimer();
+            }
+        } else {
+            resetSessionUI();
+        }
+    })
+    .catch(error => {
+        console.error('Error checking session status:', error);
+        resetSessionUI();
+    });
+}
+
+
+
+// Start session
+function startSession() {
+    // First, stop any existing session to start fresh
+    fetch(`/production/api/tasks/${currentTaskId}/session/stop`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    }).then(() => {
+        // Now start a fresh session
+        return fetch(`/production/api/tasks/${currentTaskId}/session/start`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+    }).then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            currentSessionId = data.session_id;
+            sessionStartTime = new Date(data.start_time);
+            isSessionActive = true;
+            isSessionPaused = false;
+            
+            // Reset timer display to 00:00:00
+            const timerElement = document.getElementById('current-timer');
+            const progressElement = document.getElementById('timer-progress');
+            timerElement.textContent = '00:00:00';
+            progressElement.style.width = '0%';
+            
+            updateSessionUI();
+            startTimer();
+            
+            alert('Session started successfully! Timer reset to 00:00:00');
+        } else {
+            alert('Failed to start session: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error starting session:', error);
+        alert('Error starting session');
+    });
+}
+
+// Pause session
+function pauseSession() {
+    fetch(`/production/api/tasks/${currentTaskId}/session/pause`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            reason: 'User paused session'
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            isSessionPaused = true;
+            updateSessionUI();
+            stopTimer();
+            alert('Session paused - Timer stopped');
+        } else {
+            alert('Failed to pause session: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error pausing session:', error);
+        alert('Error pausing session');
+    });
+}
+
+// Resume session
+function resumeSession() {
+    fetch(`/production/api/tasks/${currentTaskId}/session/resume`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            isSessionPaused = false;
+            updateSessionUI();
+            startTimer();
+            alert('Session resumed - Timer started');
+        } else {
+            alert('Failed to resume session: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error resuming session:', error);
+        alert('Error resuming session');
+    });
+}
+
+// Stop session
+function stopSession() {
+    if (!confirm('Are you sure you want to stop the session? This will end timing without completing the task.')) {
+        return;
+    }
+    
+    fetch(`/production/api/tasks/${currentTaskId}/session/stop`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            resetSessionUI();
+            stopTimer();
+            alert('Session stopped. Total duration: ' + data.total_duration);
+        } else {
+            alert('Failed to stop session: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error stopping session:', error);
+        alert('Error stopping session');
+    });
+}
+
+// Complete session
+function completeSession() {
+    if (!confirm('Are you sure you want to complete this task? This will mark the task as completed.')) {
+        return;
+    }
+    
+    fetch(`/production/api/tasks/${currentTaskId}/session/complete`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            resetSessionUI();
+            stopTimer();
+            alert('Task completed successfully! Total duration: ' + data.total_duration);
+            location.reload();
+        } else {
+            alert('Failed to complete session: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error completing session:', error);
+        alert('Error completing session');
+    });
+}
+
+
+
+// Update session UI
+function updateSessionUI() {
+    const sessionStatus = document.getElementById('session-status');
+    const sessionStatusText = document.getElementById('session-status-text');
+    const startBtn = document.getElementById('start-session-btn');
+    const pauseBtn = document.getElementById('pause-session-btn');
+    const resumeBtn = document.getElementById('resume-session-btn');
+    const stopBtn = document.getElementById('stop-session-btn');
+    const completeBtn = document.getElementById('complete-session-btn');
+    
+    sessionStatus.style.display = 'block';
+    
+    if (isSessionActive) {
+        sessionStatusText.textContent = 'Active - Timing in progress';
+        sessionStatus.className = 'alert alert-success';
+        startBtn.style.display = 'none';
+        pauseBtn.style.display = 'inline-block';
+        resumeBtn.style.display = 'none';
+        stopBtn.style.display = 'inline-block';
+        completeBtn.style.display = 'inline-block';
+    } else if (isSessionPaused) {
+        sessionStatusText.textContent = 'Paused - Session on hold';
+        sessionStatus.className = 'alert alert-warning';
+        startBtn.style.display = 'none';
+        pauseBtn.style.display = 'none';
+        resumeBtn.style.display = 'inline-block';
+        stopBtn.style.display = 'inline-block';
+        completeBtn.style.display = 'inline-block';
+    }
+}
+
+// Reset session UI
+function resetSessionUI() {
+    const sessionStatus = document.getElementById('session-status');
+    const sessionStatusText = document.getElementById('session-status-text');
+    const startBtn = document.getElementById('start-session-btn');
+    const pauseBtn = document.getElementById('pause-session-btn');
+    const resumeBtn = document.getElementById('resume-session-btn');
+    const stopBtn = document.getElementById('stop-session-btn');
+    const completeBtn = document.getElementById('complete-session-btn');
+    
+    sessionStatus.style.display = 'none';
+    sessionStatusText.textContent = 'No active session';
+    startBtn.style.display = 'inline-block';
+    pauseBtn.style.display = 'none';
+    resumeBtn.style.display = 'none';
+    stopBtn.style.display = 'none';
+    completeBtn.style.display = 'none';
+    
+    currentSessionId = null;
+    isSessionActive = false;
+    isSessionPaused = false;
+    sessionStartTime = null;
+}
+
+
+
+// Start timer
+function startTimer() {
+    if (sessionTimer) {
+        clearInterval(sessionTimer);
+    }
+    
+    sessionTimer = setInterval(() => {
+        updateTimerDisplay();
+    }, 1000);
+}
+
+// Stop timer
+function stopTimer() {
+    if (sessionTimer) {
+        clearInterval(sessionTimer);
+        sessionTimer = null;
+    }
+}
+
+// Update timer display
+function updateTimerDisplay() {
+    const timerElement = document.getElementById('current-timer');
+    const progressElement = document.getElementById('timer-progress');
+    
+    if (!sessionStartTime) {
+        timerElement.textContent = '00:00:00';
+        progressElement.style.width = '0%';
+        return;
+    }
+    
+    // If session is paused, don't update the timer
+    if (isSessionPaused) {
+        return;
+    }
+    
+    const now = new Date();
+    const elapsed = Math.floor((now - sessionStartTime) / 1000);
+    
+    const hours = Math.floor(elapsed / 3600);
+    const minutes = Math.floor((elapsed % 3600) / 60);
+    const seconds = elapsed % 60;
+    
+    const timeString = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    timerElement.textContent = timeString;
+    
+    // Update progress bar (assuming 8-hour work day)
+    const maxSeconds = 8 * 3600; // 8 hours
+    const progress = Math.min((elapsed / maxSeconds) * 100, 100);
+    progressElement.style.width = progress + '%';
+}
+
+// ===== COLLABORATION FUNCTIONS =====
+
+// Load collaboration data
+function loadCollaborationData() {
+    loadCollaborationStatus();
+    loadActiveUsers();
+    loadRealTimeStatus();
+}
+
+// Load collaboration status
+function loadCollaborationStatus() {
+    fetch(`/production/api/tasks/${currentTaskId}/collaboration-status`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayCollaborationStatus(data.collaboration);
+            }
+        })
+        .catch(error => {
+            console.error('Error loading collaboration status:', error);
+        });
+}
+
+// Display collaboration status
+function displayCollaborationStatus(collaboration) {
+    const container = document.getElementById('collaboration-status');
+    
+    container.innerHTML = `
+        <div class="row text-center">
+            <div class="col-6">
+                <h6 class="text-primary">${collaboration.total_users}</h6>
+                <small class="text-muted">Total Users</small>
+            </div>
+            <div class="col-6">
+                <h6 class="text-success">${collaboration.active_users}</h6>
+                <small class="text-muted">Active Now</small>
+            </div>
+        </div>
+        <div class="row text-center mt-2">
+            <div class="col-6">
+                <h6 class="text-info">${collaboration.total_duration_hours}h</h6>
+                <small class="text-muted">Total Time</small>
+            </div>
+            <div class="col-6">
+                <h6 class="text-warning">${collaboration.avg_duration_per_user_hours}h</h6>
+                <small class="text-muted">Avg/User</small>
+            </div>
+        </div>
+    `;
+}
+
+// Load active users
+function loadActiveUsers() {
+    fetch(`/production/api/tasks/${currentTaskId}/active-users`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayActiveUsers(data.active_users);
+            }
+        })
+        .catch(error => {
+            console.error('Error loading active users:', error);
+        });
+}
+
+// Display active users
+function displayActiveUsers(activeUsers) {
+    const container = document.getElementById('active-users-list');
+    
+    if (activeUsers.length === 0) {
+        container.innerHTML = '<p class="text-muted text-center">No active users</p>';
+        return;
+    }
+    
+    let html = '';
+    activeUsers.forEach(user => {
+        const isCurrentUser = user.name === '{{ current_user.get_full_name() }}';
+        const userClass = isCurrentUser ? 'text-primary fw-bold' : '';
+        
+        html += `
+            <div class="d-flex align-items-center mb-2">
+                <div class="avatar-sm me-2">
+                    <i class="fas fa-user-circle fa-lg"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <div class="${userClass}">${user.name}</div>
+                    <small class="text-muted">${user.duration || 'Just started'}</small>
+                </div>
+                <div class="status-indicator">
+                    <span class="badge bg-success">●</span>
+                </div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+// Load real-time status
+function loadRealTimeStatus() {
+    fetch(`/production/api/tasks/${currentTaskId}/real-time-status`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayRealTimeStatus(data.real_time_status);
+            }
+        })
+        .catch(error => {
+            console.error('Error loading real-time status:', error);
+        });
+}
+
+// Display real-time status
+function displayRealTimeStatus(status) {
+    const container = document.getElementById('real-time-status');
+    
+    const progressColor = status.progress_percentage >= 75 ? 'success' : 
+                         status.progress_percentage >= 50 ? 'warning' : 'info';
+    
+    container.innerHTML = `
+        <div class="mb-2">
+            <strong>Progress:</strong>
+            <div class="progress mt-1">
+                <div class="progress-bar bg-${progressColor}" style="width: ${status.progress_percentage}%">
+                    ${status.progress_percentage}%
+                </div>
+            </div>
+        </div>
+        <div class="mb-2">
+            <strong>Status:</strong>
+            <span class="badge bg-${status.task_status === 'completed' ? 'success' : 
+                                   status.task_status === 'in_progress' ? 'primary' : 'secondary'}">
+                ${status.task_status.replace('_', ' ').toUpperCase()}
+            </span>
+        </div>
+        ${status.current_user_session.has_session ? `
+            <div class="mb-2">
+                <strong>Your Session:</strong>
+                <div class="text-success">${status.current_user_session.session_duration}</div>
+            </div>
+        ` : ''}
+        <small class="text-muted">Last updated: ${new Date(status.last_updated).toLocaleTimeString()}</small>
+    `;
+}
+
+// Start real-time updates
+function startRealTimeUpdates() {
+    // Update collaboration data every 30 seconds
+    setInterval(() => {
+        loadCollaborationData();
+    }, 30000);
+}
+
+// Persist session data for cross-device sync
+function persistSessionData() {
+    if (!currentSessionId) return;
+    
+    const sessionData = {
+        task_id: currentTaskId,
+        session_id: currentSessionId,
+        start_time: sessionStartTime,
+        is_active: isSessionActive,
+        is_paused: isSessionPaused
+    };
+    
+    fetch('/production/api/sessions/persist', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            session_id: currentSessionId,
+            session_data: sessionData,
+            device_id: navigator.userAgent
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            console.log('Session data persisted for cross-device sync');
+        }
+    })
+    .catch(error => {
+        console.error('Error persisting session data:', error);
+    });
+}
+
+// Sync sessions across devices
+function syncSessions() {
+    fetch('/production/api/sessions/sync')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && Object.keys(data.sessions).length > 0) {
+                console.log('Found persisted sessions:', data.sessions);
+                // Could show a notification to resume sessions
+            }
+        })
+        .catch(error => {
+            console.error('Error syncing sessions:', error);
+        });
+}
+</script>
+{% endblock %} 

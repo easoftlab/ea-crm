@@ -1,0 +1,289 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-10 mx-auto">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0"><i class="fas fa-user-shield"></i> User Profile - {{ user.username }}</h4>
+                    <div>
+                        <a href="{{ url_for('auth.admin_users') }}" class="btn btn-outline-light btn-sm">
+                            <i class="fas fa-arrow-left"></i> Back to Users
+                        </a>
+                        <a href="{{ url_for('auth.admin_edit_user', user_id=user.id) }}" class="btn btn-outline-light btn-sm">
+                            <i class="fas fa-edit"></i> Edit User
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Profile Image and Basic Info -->
+                    <div class="row mb-4">
+                        <div class="col-md-3 text-center">
+                            <div class="profile-image-container">
+                                <img src="{{ user.get_profile_image_url() }}" 
+                                     alt="Profile Image" 
+                                     class="img-fluid rounded-circle profile-image mb-3"
+                                     style="width: 150px; height: 150px; object-fit: cover;">
+                                <div class="mt-2">
+                                    <span class="badge bg-{{ 'success' if user.is_active else 'danger' }} mb-2">
+                                        {{ 'Active' if user.is_active else 'Inactive' }}
+                                    </span>
+                                    <br>
+                                    <span class="badge bg-{{ 'success' if user.is_approved else 'warning' }}">
+                                        {{ 'Approved' if user.is_approved else 'Pending Approval' }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-9">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h5><i class="fas fa-user"></i> Basic Information</h5>
+                                    <ul class="list-unstyled">
+                                        <li><strong>Username:</strong> {{ user.username }}</li>
+                                        <li><strong>Full Name:</strong> {{ user.get_full_name() }}</li>
+                                        <li><strong>Email:</strong> {{ user.email }}</li>
+                                        <li><strong>Role:</strong> {{ user.role.name }}</li>
+                                        {% if user.get_age() %}
+                                        <li><strong>Age:</strong> {{ user.get_age() }} years</li>
+                                        {% endif %}
+                                        {% if user.date_of_birth %}
+                                        <li><strong>Date of Birth:</strong> {{ user.date_of_birth.strftime('%B %d, %Y') }}</li>
+                                        {% endif %}
+                                        {% if user.nid_number %}
+                                        <li><strong>NID Number:</strong> {{ user.nid_number }}</li>
+                                        {% endif %}
+                                    </ul>
+                                </div>
+                                <div class="col-md-6">
+                                    <h5><i class="fas fa-info-circle"></i> Account Information</h5>
+                                    <ul class="list-unstyled">
+                                        <li><strong>Member since:</strong> {{ user.created_at.strftime('%B %d, %Y') }}</li>
+                                        {% if user.last_login %}
+                                        <li><strong>Last login:</strong> {{ user.last_login.strftime('%B %d, %Y at %I:%M %p') }}</li>
+                                        {% endif %}
+                                        {% if user.approved_by %}
+                                        <li><strong>Approved by:</strong> {{ user.approver.username if user.approver else 'N/A' }}</li>
+                                        {% endif %}
+                                        {% if user.approved_at %}
+                                        <li><strong>Approved on:</strong> {{ user.approved_at.strftime('%B %d, %Y at %I:%M %p') }}</li>
+                                        {% endif %}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Personal Information -->
+                    {% if user.blood_group or user.marital_status %}
+                    <div class="card mb-4">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="mb-0"><i class="fas fa-id-card"></i> Personal Information</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                {% if user.blood_group %}
+                                <div class="col-md-6">
+                                    <strong>Blood Group:</strong> {{ user.blood_group }}
+                                </div>
+                                {% endif %}
+                                {% if user.marital_status %}
+                                <div class="col-md-6">
+                                    <strong>Marital Status:</strong> {{ user.marital_status }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Contact Information -->
+                    {% if user.phone_number or user.emergency_phone or user.emergency_contact_name %}
+                    <div class="card mb-4">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0"><i class="fas fa-phone"></i> Contact Information</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                {% if user.phone_number %}
+                                <div class="col-md-6">
+                                    <strong>Phone Number:</strong> {{ user.phone_number }}
+                                </div>
+                                {% endif %}
+                                {% if user.emergency_phone %}
+                                <div class="col-md-6">
+                                    <strong>Emergency Phone:</strong> {{ user.emergency_phone }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% if user.emergency_contact_name %}
+                            <div class="row mt-2">
+                                <div class="col-md-6">
+                                    <strong>Emergency Contact:</strong> {{ user.emergency_contact_name }}
+                                </div>
+                                {% if user.emergency_contact_relationship %}
+                                <div class="col-md-6">
+                                    <strong>Relationship:</strong> {{ user.emergency_contact_relationship }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Address Information -->
+                    {% if user.current_address or user.permanent_address or user.city or user.state_province or user.country %}
+                    <div class="card mb-4">
+                        <div class="card-header bg-warning text-dark">
+                            <h5 class="mb-0"><i class="fas fa-map-marker-alt"></i> Address Information</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if user.current_address %}
+                            <div class="mb-3">
+                                <strong>Current Address:</strong><br>
+                                <div class="ms-3">{{ user.current_address|nl2br }}</div>
+                            </div>
+                            {% endif %}
+                            {% if user.permanent_address %}
+                            <div class="mb-3">
+                                <strong>Permanent Address:</strong><br>
+                                <div class="ms-3">{{ user.permanent_address|nl2br }}</div>
+                            </div>
+                            {% endif %}
+                            <div class="row">
+                                {% if user.city %}
+                                <div class="col-md-3">
+                                    <strong>City:</strong> {{ user.city }}
+                                </div>
+                                {% endif %}
+                                {% if user.state_province %}
+                                <div class="col-md-3">
+                                    <strong>State/Province:</strong> {{ user.state_province }}
+                                </div>
+                                {% endif %}
+                                {% if user.postal_code %}
+                                <div class="col-md-3">
+                                    <strong>Postal Code:</strong> {{ user.postal_code }}
+                                </div>
+                                {% endif %}
+                                {% if user.country %}
+                                <div class="col-md-3">
+                                    <strong>Country:</strong> {{ user.country }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Family Information -->
+                    {% if user.father_name or user.mother_name %}
+                    <div class="card mb-4">
+                        <div class="card-header bg-secondary text-white">
+                            <h5 class="mb-0"><i class="fas fa-users"></i> Family Information</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                {% if user.father_name %}
+                                <div class="col-md-6">
+                                    <strong>Father's Name:</strong> {{ user.father_name }}
+                                </div>
+                                {% endif %}
+                                {% if user.mother_name %}
+                                <div class="col-md-6">
+                                    <strong>Mother's Name:</strong> {{ user.mother_name }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Role Permissions -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-dark text-white">
+                            <h5 class="mb-0"><i class="fas fa-shield-alt"></i> Role Permissions</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if user.role.permissions %}
+                                <div class="row">
+                                    {% for permission in user.role.permissions.split(',') %}
+                                    <div class="col-md-4 mb-2">
+                                        <i class="fas fa-check text-success"></i> {{ permission.replace('_', ' ').title() }}
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <p class="text-muted">No specific permissions assigned.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Activity Summary -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="mb-0"><i class="fas fa-chart-line"></i> Activity Summary</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="text-center">
+                                        <h4 class="text-primary">{{ user.created_leads|length }}</h4>
+                                        <small class="text-muted">Leads Created</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="text-center">
+                                        <h4 class="text-success">{{ user.converted_clients|length }}</h4>
+                                        <small class="text-muted">Clients Converted</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="text-center">
+                                        <h4 class="text-warning">{{ user.activities|length }}</h4>
+                                        <small class="text-muted">Total Activities</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="text-center">
+                                        <h4 class="text-info">{{ user.profile_change_requests|length }}</h4>
+                                        <small class="text-muted">Profile Changes</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.profile-image-container {
+    position: relative;
+}
+
+.profile-image {
+    border: 3px solid #007bff;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.card-header {
+    border-bottom: none;
+}
+
+.card {
+    border: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.card-header {
+    border-radius: 0.375rem 0.375rem 0 0 !important;
+}
+</style>
+{% endblock %} 

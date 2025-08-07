@@ -1,0 +1,521 @@
+{% extends 'base.html' %}
+{% block title %}Productivity Analytics{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2 class="mb-0">📊 Productivity Analytics</h2>
+                <div>
+                    <a href="{{ url_for('production.dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4" id="summary-cards">
+        <div class="col-md-2">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h4 id="total-sessions">0</h4>
+                    <small>Total Sessions</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h4 id="total-hours">0</h4>
+                    <small>Total Hours</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h4 id="completed-tasks">0</h4>
+                    <small>Completed Tasks</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-warning text-white">
+                <div class="card-body text-center">
+                    <h4 id="avg-session">0</h4>
+                    <small>Avg Session (hrs)</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-secondary text-white">
+                <div class="card-body text-center">
+                    <h4 id="today-hours">0</h4>
+                    <small>Today's Hours</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-dark text-white">
+                <div class="card-body text-center">
+                    <h4 id="week-hours">0</h4>
+                    <small>This Week</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row mb-4">
+        <!-- Daily Productivity Chart -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">📈 Daily Productivity Trend</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="dailyProductivityChart" height="100"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Task Type Distribution -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">🎯 Task Type Distribution</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="taskTypeChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Tasks and Session Status -->
+    <div class="row mb-4">
+        <!-- Top Tasks -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">🏆 Top Tasks by Duration</h5>
+                </div>
+                <div class="card-body">
+                    <div id="top-tasks-list">
+                        <div class="text-center">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Session Status -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">📊 Session Status Breakdown</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="sessionStatusChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Session History -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">📋 Session History</h5>
+                    <div>
+                        <button class="btn btn-sm btn-outline-primary" onclick="refreshSessionHistory()">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Task</th>
+                                    <th>Type</th>
+                                    <th>Status</th>
+                                    <th>Start Time</th>
+                                    <th>End Time</th>
+                                    <th>Duration</th>
+                                    <th>Pause Time</th>
+                                </tr>
+                            </thead>
+                            <tbody id="session-history-table">
+                                <tr>
+                                    <td colspan="7" class="text-center">
+                                        <div class="spinner-border" role="status">
+                                            <span class="visually-hidden">Loading...</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Pagination -->
+                    <nav aria-label="Session history pagination">
+                        <ul class="pagination justify-content-center" id="session-pagination">
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Insights Modal -->
+<div class="modal fade" id="insightsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">💡 Productivity Insights</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="insights-content">
+                <!-- Insights will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let dailyChart, taskTypeChart, sessionStatusChart;
+let currentPage = 1;
+
+// Initialize analytics dashboard
+document.addEventListener('DOMContentLoaded', function() {
+    loadProductivitySummary();
+    loadChartData();
+    loadTopTasks();
+    loadSessionHistory();
+});
+
+// Load productivity summary
+function loadProductivitySummary() {
+    fetch('/production/api/productivity/summary')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const summary = data.summary;
+                document.getElementById('total-sessions').textContent = summary.total_sessions;
+                document.getElementById('total-hours').textContent = summary.total_duration_hours;
+                document.getElementById('completed-tasks').textContent = summary.completed_tasks;
+                document.getElementById('avg-session').textContent = summary.avg_session_hours;
+                document.getElementById('today-hours').textContent = summary.today_duration_hours;
+                document.getElementById('week-hours').textContent = summary.week_duration_hours;
+            }
+        })
+        .catch(error => {
+            console.error('Error loading productivity summary:', error);
+        });
+}
+
+// Load chart data
+function loadChartData() {
+    fetch('/production/api/productivity/chart-data')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                createDailyProductivityChart(data.daily_data);
+                createTaskTypeChart(data.task_type_data);
+                createSessionStatusChart(data.status_data);
+            }
+        })
+        .catch(error => {
+            console.error('Error loading chart data:', error);
+        });
+}
+
+// Create daily productivity chart
+function createDailyProductivityChart(dailyData) {
+    const ctx = document.getElementById('dailyProductivityChart').getContext('2d');
+    
+    if (dailyChart) {
+        dailyChart.destroy();
+    }
+    
+    dailyChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: dailyData.map(item => item.date),
+            datasets: [{
+                label: 'Hours Worked',
+                data: dailyData.map(item => item.duration_hours),
+                borderColor: 'rgb(75, 192, 192)',
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Hours'
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Create task type chart
+function createTaskTypeChart(taskTypeData) {
+    const ctx = document.getElementById('taskTypeChart').getContext('2d');
+    
+    if (taskTypeChart) {
+        taskTypeChart.destroy();
+    }
+    
+    const colors = [
+        '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0',
+        '#9966FF', '#FF9F40', '#FF6384', '#C9CBCF'
+    ];
+    
+    taskTypeChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: taskTypeData.map(item => item.task_type.replace('_', ' ').toUpperCase()),
+            datasets: [{
+                data: taskTypeData.map(item => item.duration_hours),
+                backgroundColor: colors.slice(0, taskTypeData.length)
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+}
+
+// Create session status chart
+function createSessionStatusChart(statusData) {
+    const ctx = document.getElementById('sessionStatusChart').getContext('2d');
+    
+    if (sessionStatusChart) {
+        sessionStatusChart.destroy();
+    }
+    
+    const colors = {
+        'completed': '#28a745',
+        'active': '#007bff',
+        'paused': '#ffc107',
+        'stopped': '#dc3545'
+    };
+    
+    sessionStatusChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: statusData.map(item => item.status.replace('_', ' ').toUpperCase()),
+            datasets: [{
+                label: 'Sessions',
+                data: statusData.map(item => item.count),
+                backgroundColor: statusData.map(item => colors[item.status] || '#6c757d')
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Number of Sessions'
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Load top tasks
+function loadTopTasks() {
+    fetch('/production/api/productivity/top-tasks')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayTopTasks(data.top_tasks);
+            }
+        })
+        .catch(error => {
+            console.error('Error loading top tasks:', error);
+        });
+}
+
+// Display top tasks
+function displayTopTasks(tasks) {
+    const container = document.getElementById('top-tasks-list');
+    
+    if (tasks.length === 0) {
+        container.innerHTML = '<p class="text-muted text-center">No tasks found</p>';
+        return;
+    }
+    
+    let html = '';
+    tasks.forEach((task, index) => {
+        const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '🏅';
+        html += `
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <div>
+                    <span class="me-2">${medal}</span>
+                    <strong>${task.title}</strong>
+                    <small class="text-muted d-block">${task.task_type.replace('_', ' ').toUpperCase()}</small>
+                </div>
+                <div class="text-end">
+                    <span class="badge bg-primary">${task.duration_hours}h</span>
+                </div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+// Load session history
+function loadSessionHistory(page = 1) {
+    currentPage = page;
+    
+    fetch(`/production/api/productivity/session-history?page=${page}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displaySessionHistory(data.sessions);
+                displayPagination(data.pagination);
+            }
+        })
+        .catch(error => {
+            console.error('Error loading session history:', error);
+        });
+}
+
+// Display session history
+function displaySessionHistory(sessions) {
+    const tbody = document.getElementById('session-history-table');
+    
+    if (sessions.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No sessions found</td></tr>';
+        return;
+    }
+    
+    let html = '';
+    sessions.forEach(session => {
+        const statusBadge = {
+            'completed': 'success',
+            'active': 'primary',
+            'paused': 'warning',
+            'stopped': 'danger'
+        }[session.status] || 'secondary';
+        
+        const startTime = new Date(session.start_time).toLocaleString();
+        const endTime = session.end_time ? new Date(session.end_time).toLocaleString() : '-';
+        
+        html += `
+            <tr>
+                <td>${session.task_title}</td>
+                <td><span class="badge bg-secondary">${session.task_type.replace('_', ' ').toUpperCase()}</span></td>
+                <td><span class="badge bg-${statusBadge}">${session.status.replace('_', ' ').toUpperCase()}</span></td>
+                <td>${startTime}</td>
+                <td>${endTime}</td>
+                <td><strong>${session.duration_hours}h</strong></td>
+                <td>${session.pause_duration_minutes}m</td>
+            </tr>
+        `;
+    });
+    
+    tbody.innerHTML = html;
+}
+
+// Display pagination
+function displayPagination(pagination) {
+    const nav = document.getElementById('session-pagination');
+    
+    if (pagination.pages <= 1) {
+        nav.innerHTML = '';
+        return;
+    }
+    
+    let html = '';
+    
+    // Previous button
+    if (pagination.has_prev) {
+        html += `<li class="page-item"><a class="page-link" href="#" onclick="loadSessionHistory(${pagination.page - 1})">Previous</a></li>`;
+    }
+    
+    // Page numbers
+    for (let i = 1; i <= pagination.pages; i++) {
+        if (i === pagination.page) {
+            html += `<li class="page-item active"><span class="page-link">${i}</span></li>`;
+        } else {
+            html += `<li class="page-item"><a class="page-link" href="#" onclick="loadSessionHistory(${i})">${i}</a></li>`;
+        }
+    }
+    
+    // Next button
+    if (pagination.has_next) {
+        html += `<li class="page-item"><a class="page-link" href="#" onclick="loadSessionHistory(${pagination.page + 1})">Next</a></li>`;
+    }
+    
+    nav.innerHTML = html;
+}
+
+// Refresh session history
+function refreshSessionHistory() {
+    loadSessionHistory(currentPage);
+}
+
+// Generate insights
+function generateInsights() {
+    // This would integrate with AI to generate productivity insights
+    const insights = [
+        "You're most productive on weekdays between 9 AM and 2 PM",
+        "Your average session duration is 2.5 hours, which is optimal for deep work",
+        "You complete 85% of tasks you start, which is excellent",
+        "Consider taking more breaks - your pause time is only 5% of total work time"
+    ];
+    
+    const content = document.getElementById('insights-content');
+    content.innerHTML = `
+        <div class="row">
+            ${insights.map(insight => `
+                <div class="col-md-6 mb-3">
+                    <div class="alert alert-info">
+                        <i class="fas fa-lightbulb me-2"></i>
+                        ${insight}
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+    
+    new bootstrap.Modal(document.getElementById('insightsModal')).show();
+}
+</script>
+{% endblock %} 
