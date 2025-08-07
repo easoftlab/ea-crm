@@ -83,8 +83,6 @@ jobs:
         
         # Copy application files
         cp -r app/ deploy_package/
-        cp -r static/ deploy_package/
-        cp -r templates/ deploy_package/
         
         # Copy core files
         cp *.py deploy_package/
