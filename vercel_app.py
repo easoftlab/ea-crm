@@ -1,138 +1,21 @@
 #!/usr/bin/env python3
 """
-Simplified EA CRM for Vercel deployment
-This version supports external databases for production use
+Ultra-simplified EA CRM for Vercel deployment
+Basic version to test deployment
 """
 
 from flask import Flask, render_template_string, request, redirect, url_for, session, jsonify
 import os
-import sqlite3
-from datetime import datetime
-import json
 
 app = Flask(__name__)
 
 # Set secret key
 app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-here-12345')
 
-# Database setup - support external databases
-def get_db():
-    """Get database connection - supports external databases"""
-    
-    # Check for external database URL
-    database_url = os.environ.get('DATABASE_URL')
-    
-    if database_url and database_url.startswith('postgresql://'):
-        # PostgreSQL support
-        try:
-            import psycopg2
-            conn = psycopg2.connect(database_url)
-            return conn
-        except ImportError:
-            print("PostgreSQL driver not installed, using SQLite")
-        except Exception as e:
-            print(f"PostgreSQL connection failed: {e}, using SQLite")
-    
-    elif database_url and database_url.startswith('mysql://'):
-        # MySQL support
-        try:
-            import pymysql
-            # Parse MySQL URL and connect
-            conn = pymysql.connect(
-                host=os.environ.get('DB_HOST', 'localhost'),
-                user=os.environ.get('DB_USER', 'root'),
-                password=os.environ.get('DB_PASSWORD', ''),
-                database=os.environ.get('DB_NAME', 'ea_crm'),
-                port=int(os.environ.get('DB_PORT', 3306))
-            )
-            return conn
-        except ImportError:
-            print("MySQL driver not installed, using SQLite")
-        except Exception as e:
-            print(f"MySQL connection failed: {e}, using SQLite")
-    
-    # Fallback to in-memory SQLite for development
-    conn = sqlite3.connect(':memory:')
-    cursor = conn.cursor()
-    
-    # Create users table
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE NOT NULL,
-            password TEXT NOT NULL,
-            role TEXT DEFAULT 'user',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    
-    # Create leads table
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS leads (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            email TEXT,
-            phone TEXT,
-            company TEXT,
-            status TEXT DEFAULT 'new',
-            source TEXT,
-            notes TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    
-    # Create tasks table
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS tasks (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT NOT NULL,
-            description TEXT,
-            status TEXT DEFAULT 'pending',
-            priority TEXT DEFAULT 'medium',
-            assigned_to TEXT,
-            due_date TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    
-    # Insert default admin user if not exists
-    cursor.execute('SELECT * FROM users WHERE username = ?', ('admin',))
-    if not cursor.fetchone():
-        cursor.execute('INSERT INTO users (username, password, role) VALUES (?, ?, ?)', 
-                     ('admin', 'admin123', 'admin'))
-    
-    conn.commit()
-    return conn
-
 @app.route('/')
 def home():
     if 'user_id' not in session:
         return redirect(url_for('login'))
-    
-    try:
-        # Get dashboard stats
-        conn = get_db()
-        cursor = conn.cursor()
-        
-        # Count leads by status
-        cursor.execute('SELECT status, COUNT(*) FROM leads GROUP BY status')
-        lead_stats = dict(cursor.fetchall())
-        
-        # Count tasks by status
-        cursor.execute('SELECT status, COUNT(*) FROM tasks GROUP BY status')
-        task_stats = dict(cursor.fetchall())
-        
-        # Get recent leads
-        cursor.execute('SELECT * FROM leads ORDER BY created_at DESC LIMIT 5')
-        recent_leads = cursor.fetchall()
-        
-        conn.close()
-    except Exception as e:
-        print(f"Dashboard error: {e}")
-        lead_stats = {}
-        task_stats = {}
-        recent_leads = []
     
     html = """
     <!DOCTYPE html>
@@ -198,20 +81,6 @@ def home():
             .nav-menu a:hover {
                 background: #f0f0f0;
             }
-            .recent-leads {
-                background: white;
-                padding: 20px;
-                border-radius: 8px;
-                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-                margin-top: 20px;
-            }
-            .lead-item {
-                padding: 10px;
-                border-bottom: 1px solid #eee;
-            }
-            .lead-item:last-child {
-                border-bottom: none;
-            }
             .logout-btn {
                 background: rgba(255,255,255,0.2);
                 color: white;
@@ -242,7 +111,7 @@ def home():
         
         <div class="container">
             <div class="db-info">
-                <strong>Database:</strong> {db_type} - {db_status}
+                <strong>Status:</strong> Basic Version - Working Successfully! ✅
             </div>
             
             <div class="nav-menu">
@@ -256,94 +125,57 @@ def home():
             <div class="stats-grid">
                 <div class="stat-card">
                     <h3>📊 Total Leads</h3>
-                    <div class="stat-number">{total_leads}</div>
+                    <div class="stat-number">0</div>
                 </div>
                 <div class="stat-card">
                     <h3>✅ Active Tasks</h3>
-                    <div class="stat-number">{active_tasks}</div>
+                    <div class="stat-number">0</div>
                 </div>
                 <div class="stat-card">
                     <h3>🆕 New Leads</h3>
-                    <div class="stat-number">{new_leads}</div>
+                    <div class="stat-number">0</div>
                 </div>
                 <div class="stat-card">
                     <h3>📈 Conversion Rate</h3>
-                    <div class="stat-number">{conversion_rate}%</div>
+                    <div class="stat-number">0%</div>
                 </div>
             </div>
             
-            <div class="recent-leads">
-                <h3>📋 Recent Leads</h3>
-                {recent_leads_html}
+            <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-top: 20px;">
+                <h3>🎉 Success!</h3>
+                <p>The EA CRM is now working on Vercel! This is a basic version without database functionality.</p>
+                <p><strong>Next Steps:</strong></p>
+                <ul>
+                    <li>✅ Basic deployment working</li>
+                    <li>✅ Login system functional</li>
+                    <li>✅ Dashboard displaying</li>
+                    <li>🔄 Add database functionality</li>
+                    <li>🔄 Add lead management</li>
+                </ul>
             </div>
         </div>
     </body>
     </html>
     """
     
-    # Calculate stats
-    total_leads = sum(lead_stats.values()) if lead_stats else 0
-    active_tasks = task_stats.get('active', 0) + task_stats.get('pending', 0)
-    new_leads = lead_stats.get('new', 0)
-    conversion_rate = round((lead_stats.get('converted', 0) / total_leads * 100) if total_leads > 0 else 0, 1)
-    
-    # Generate recent leads HTML
-    recent_leads_html = ""
-    for lead in recent_leads:
-        recent_leads_html += f"""
-        <div class="lead-item">
-            <strong>{lead[1]}</strong> - {lead[4]} ({lead[5]})
-            <br><small>Added: {lead[8]}</small>
-        </div>
-        """
-    
-    # Determine database type
-    database_url = os.environ.get('DATABASE_URL', '')
-    if database_url.startswith('postgresql://'):
-        db_type = "PostgreSQL"
-        db_status = "Production Ready"
-    elif database_url.startswith('mysql://'):
-        db_type = "MySQL"
-        db_status = "Production Ready"
-    else:
-        db_type = "SQLite (In-Memory)"
-        db_status = "Development Mode - Data not persistent"
-    
-    return html.format(
-        total_leads=total_leads,
-        active_tasks=active_tasks,
-        new_leads=new_leads,
-        conversion_rate=conversion_rate,
-        recent_leads_html=recent_leads_html,
-        db_type=db_type,
-        db_status=db_status
-    )
+    return html
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     error_message = ""
     
-    try:
-        if request.method == 'POST':
-            username = request.form['username']
-            password = request.form['password']
-            
-            conn = get_db()
-            cursor = conn.cursor()
-            cursor.execute('SELECT * FROM users WHERE username = ? AND password = ?', (username, password))
-            user = cursor.fetchone()
-            conn.close()
-            
-            if user:
-                session['user_id'] = user[0]
-                session['username'] = user[1]
-                session['role'] = user[3]
-                return redirect(url_for('home'))
-            else:
-                error_message = 'Invalid username or password'
-    except Exception as e:
-        print(f"Login error: {e}")
-        error_message = 'System error, please try again'
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        
+        # Simple hardcoded login for testing
+        if username == 'admin' and password == 'admin123':
+            session['user_id'] = 1
+            session['username'] = 'admin'
+            session['role'] = 'admin'
+            return redirect(url_for('home'))
+        else:
+            error_message = 'Invalid username or password'
     
     html = """
     <!DOCTYPE html>
@@ -451,16 +283,6 @@ def leads():
     if 'user_id' not in session:
         return redirect(url_for('login'))
     
-    try:
-        conn = get_db()
-        cursor = conn.cursor()
-        cursor.execute('SELECT * FROM leads ORDER BY created_at DESC')
-        leads = cursor.fetchall()
-        conn.close()
-    except Exception as e:
-        print(f"Leads error: {e}")
-        leads = []
-    
     html = """
     <!DOCTYPE html>
     <html>
@@ -472,13 +294,6 @@ def leads():
             .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
             .nav-menu { background: white; padding: 15px; margin: 20px 0; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
             .nav-menu a { color: #667eea; text-decoration: none; margin-right: 20px; padding: 10px 15px; border-radius: 5px; }
-            .leads-table { background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow: hidden; }
-            .leads-table table { width: 100%; border-collapse: collapse; }
-            .leads-table th, .leads-table td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; }
-            .leads-table th { background: #f8f9fa; font-weight: bold; }
-            .status-new { background: #e3f2fd; color: #1976d2; padding: 2px 8px; border-radius: 3px; }
-            .status-contacted { background: #fff3e0; color: #f57c00; padding: 2px 8px; border-radius: 3px; }
-            .status-converted { background: #e8f5e8; color: #388e3c; padding: 2px 8px; border-radius: 3px; }
         </style>
     </head>
     <body>
@@ -495,71 +310,22 @@ def leads():
                 <a href="/add_task">Add Task</a>
             </div>
             
-            <div class="leads-table">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>Phone</th>
-                            <th>Company</th>
-                            <th>Status</th>
-                            <th>Created</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {leads_rows}
-                    </tbody>
-                </table>
+            <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                <h3>📋 Leads</h3>
+                <p>Database functionality will be added in the next version.</p>
+                <p>Currently showing: 0 leads</p>
             </div>
         </div>
     </body>
     </html>
     """
     
-    leads_rows = ""
-    for lead in leads:
-        status_class = f"status-{lead[5]}"
-        leads_rows += f"""
-        <tr>
-            <td>{lead[1]}</td>
-            <td>{lead[2]}</td>
-            <td>{lead[3]}</td>
-            <td>{lead[4]}</td>
-            <td><span class="{status_class}">{lead[5]}</span></td>
-            <td>{lead[8]}</td>
-        </tr>
-        """
-    
-    return html.format(leads_rows=leads_rows)
+    return html
 
 @app.route('/add_lead', methods=['GET', 'POST'])
 def add_lead():
     if 'user_id' not in session:
         return redirect(url_for('login'))
-    
-    if request.method == 'POST':
-        try:
-            name = request.form['name']
-            email = request.form['email']
-            phone = request.form['phone']
-            company = request.form['company']
-            status = request.form['status']
-            notes = request.form['notes']
-            
-            conn = get_db()
-            cursor = conn.cursor()
-            cursor.execute('''
-                INSERT INTO leads (name, email, phone, company, status, notes)
-                VALUES (?, ?, ?, ?, ?, ?)
-            ''', (name, email, phone, company, status, notes))
-            conn.commit()
-            conn.close()
-            
-            return redirect(url_for('leads'))
-        except Exception as e:
-            print(f"Add lead error: {e}")
-            # Continue to show the form with error
     
     html = """
     <!DOCTYPE html>
@@ -585,37 +351,9 @@ def add_lead():
         
         <div class="container">
             <div class="form-container">
-                <form method="POST">
-                    <div class="form-group">
-                        <label>Name:</label>
-                        <input type="text" name="name" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Email:</label>
-                        <input type="email" name="email">
-                    </div>
-                    <div class="form-group">
-                        <label>Phone:</label>
-                        <input type="tel" name="phone">
-                    </div>
-                    <div class="form-group">
-                        <label>Company:</label>
-                        <input type="text" name="company">
-                    </div>
-                    <div class="form-group">
-                        <label>Status:</label>
-                        <select name="status">
-                            <option value="new">New</option>
-                            <option value="contacted">Contacted</option>
-                            <option value="converted">Converted</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Notes:</label>
-                        <textarea name="notes" rows="4"></textarea>
-                    </div>
-                    <button type="submit" class="submit-btn">Add Lead</button>
-                </form>
+                <h3>Database functionality coming soon!</h3>
+                <p>This feature will be available in the next version with database integration.</p>
+                <a href="/leads" style="color: #667eea;">← Back to Leads</a>
             </div>
         </div>
     </body>
@@ -631,7 +369,7 @@ def health():
         "message": "EA CRM is running successfully",
         "version": "1.0.0",
         "deployment": "Vercel",
-        "database": "External DB Ready"
+        "database": "Basic Version - No Database"
     })
 
 if __name__ == "__main__":
