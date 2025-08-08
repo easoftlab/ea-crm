@@ -1,4 +1,4 @@
-name: EA CRM - Test and Build
+name: EA CRM - Deploy to Vercel
 
 on:
   push:
@@ -37,9 +37,28 @@ jobs:
         flags: unittests
         name: codecov-umbrella
       continue-on-error: true
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
     
-    - name: Build Status
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Deploy to Vercel
+      uses: amondnet/vercel-action@v25
+      with:
+        vercel-token: ${{ secrets.VERCEL_TOKEN }}
+        vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+        vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+        working-directory: ./
+        vercel-args: '--prod'
+    
+    - name: Notify deployment status
       run: |
-        echo "✅ Tests completed successfully!"
-        echo "📦 Ready for Vercel deployment"
-        echo "🔗 Deploy manually to Vercel for now" 
+        echo "🚀 Deployment to Vercel completed successfully!"
+        echo "📅 Deployment timestamp: $(date)"
+        echo "🔗 Your EA CRM is now live on Vercel!"
+        echo "📊 Check the Vercel dashboard for deployment status" 
