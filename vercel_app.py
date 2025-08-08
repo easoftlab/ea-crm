@@ -51,7 +51,7 @@ def get_db():
         except Exception as e:
             print(f"MySQL connection failed: {e}, using SQLite")
     
-        # Fallback to in-memory SQLite for development
+    # Fallback to in-memory SQLite for development
     conn = sqlite3.connect(':memory:')
     cursor = conn.cursor()
     
@@ -451,11 +451,15 @@ def leads():
     if 'user_id' not in session:
         return redirect(url_for('login'))
     
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute('SELECT * FROM leads ORDER BY created_at DESC')
-    leads = cursor.fetchall()
-    conn.close()
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM leads ORDER BY created_at DESC')
+        leads = cursor.fetchall()
+        conn.close()
+    except Exception as e:
+        print(f"Leads error: {e}")
+        leads = []
     
     html = """
     <!DOCTYPE html>
@@ -535,23 +539,27 @@ def add_lead():
         return redirect(url_for('login'))
     
     if request.method == 'POST':
-        name = request.form['name']
-        email = request.form['email']
-        phone = request.form['phone']
-        company = request.form['company']
-        status = request.form['status']
-        notes = request.form['notes']
-        
-        conn = get_db()
-        cursor = conn.cursor()
-        cursor.execute('''
-            INSERT INTO leads (name, email, phone, company, status, notes)
-            VALUES (?, ?, ?, ?, ?, ?)
-        ''', (name, email, phone, company, status, notes))
-        conn.commit()
-        conn.close()
-        
-        return redirect(url_for('leads'))
+        try:
+            name = request.form['name']
+            email = request.form['email']
+            phone = request.form['phone']
+            company = request.form['company']
+            status = request.form['status']
+            notes = request.form['notes']
+            
+            conn = get_db()
+            cursor = conn.cursor()
+            cursor.execute('''
+                INSERT INTO leads (name, email, phone, company, status, notes)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (name, email, phone, company, status, notes))
+            conn.commit()
+            conn.close()
+            
+            return redirect(url_for('leads'))
+        except Exception as e:
+            print(f"Add lead error: {e}")
+            # Continue to show the form with error
     
     html = """
     <!DOCTYPE html>
