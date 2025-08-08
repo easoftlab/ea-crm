@@ -15,10 +15,10 @@ app = Flask(__name__)
 # Set secret key
 app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-here-12345')
 
-# Database setup
-def init_db():
-    """Initialize SQLite database"""
-    conn = sqlite3.connect('instance/leads.db')
+# Database setup - use in-memory database for Vercel
+def get_db():
+    """Get database connection - use in-memory for Vercel"""
+    conn = sqlite3.connect(':memory:')
     cursor = conn.cursor()
     
     # Create users table
@@ -69,10 +69,7 @@ def init_db():
                      ('admin', 'admin123', 'admin'))
     
     conn.commit()
-    conn.close()
-
-# Initialize database
-init_db()
+    return conn
 
 @app.route('/')
 def home():
@@ -80,7 +77,7 @@ def home():
         return redirect(url_for('login'))
     
     # Get dashboard stats
-    conn = sqlite3.connect('instance/leads.db')
+    conn = get_db()
     cursor = conn.cursor()
     
     # Count leads by status
@@ -262,7 +259,7 @@ def login():
         username = request.form['username']
         password = request.form['password']
         
-        conn = sqlite3.connect('instance/leads.db')
+        conn = get_db()
         cursor = conn.cursor()
         cursor.execute('SELECT * FROM users WHERE username = ? AND password = ?', (username, password))
         user = cursor.fetchone()
@@ -383,7 +380,7 @@ def leads():
     if 'user_id' not in session:
         return redirect(url_for('login'))
     
-    conn = sqlite3.connect('instance/leads.db')
+    conn = get_db()
     cursor = conn.cursor()
     cursor.execute('SELECT * FROM leads ORDER BY created_at DESC')
     leads = cursor.fetchall()
@@ -474,7 +471,7 @@ def add_lead():
         status = request.form['status']
         notes = request.form['notes']
         
-        conn = sqlite3.connect('instance/leads.db')
+        conn = get_db()
         cursor = conn.cursor()
         cursor.execute('''
             INSERT INTO leads (name, email, phone, company, status, notes)
