@@ -57,23 +57,23 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
     
-    - name: Debug - Check secrets
+    - name: Debug - Check Vercel secrets
       run: |
-        echo "🔍 Checking GitHub secrets..."
-        if [ -n "${{ secrets.FTP_SERVER }}" ]; then
-          echo "✅ FTP_SERVER is set"
+        echo "🔍 Checking Vercel secrets..."
+        if [ -n "${{ secrets.VERCEL_TOKEN }}" ]; then
+          echo "✅ VERCEL_TOKEN is set"
         else
-          echo "❌ FTP_SERVER is NOT set"
+          echo "❌ VERCEL_TOKEN is NOT set"
         fi
-        if [ -n "${{ secrets.FTP_USERNAME }}" ]; then
-          echo "✅ FTP_USERNAME is set"
+        if [ -n "${{ secrets.VERCEL_ORG_ID }}" ]; then
+          echo "✅ VERCEL_ORG_ID is set"
         else
-          echo "❌ FTP_USERNAME is NOT set"
+          echo "❌ VERCEL_ORG_ID is NOT set"
         fi
-        if [ -n "${{ secrets.FTP_PASSWORD }}" ]; then
-          echo "✅ FTP_PASSWORD is set"
+        if [ -n "${{ secrets.VERCEL_PROJECT_ID }}" ]; then
+          echo "✅ VERCEL_PROJECT_ID is set"
         else
-          echo "❌ FTP_PASSWORD is NOT set"
+          echo "❌ VERCEL_PROJECT_ID is NOT set"
         fi
     
     - name: Create deployment package
@@ -106,31 +106,14 @@ jobs:
         
         echo "Deployment package created successfully!"
     
-    - name: Deploy to Hostinger via FTP
-      uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+    - name: Deploy to Vercel
+      uses: amondnet/vercel-action@v25
       with:
-        server: ${{ secrets.FTP_SERVER }}
-        username: ${{ secrets.FTP_USERNAME }}
-        password: ${{ secrets.FTP_PASSWORD }}
-        server-dir: /public_html/crm/
-        local-dir: ./deploy_package/
-        exclude: |
-          **/.git*
-          **/.git*/**
-          **/node_modules/**
-          **/.DS_Store
-          **/__pycache__/**
-          **/*.pyc
-          **/.env
-          **/instance/**
-          **/tests/**
-          **/docs/**
-          **/portfolio_screenshots/**
-          **/.github/**
-          **/deploy_*.zip
-          **/crm_upload_*.zip
-          **/deploy_20250801_*/
-          **/crm_upload_20250801_*/
+        vercel-token: ${{ secrets.VERCEL_TOKEN }}
+        vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+        vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+        working-directory: ./
+        vercel-args: '--prod'
     
     - name: Run post-deployment tasks
       run: |
