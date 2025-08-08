@@ -4,7 +4,7 @@ Simplified EA CRM for Vercel deployment
 This version supports external databases for production use
 """
 
-from flask import Flask, render_template_string, request, redirect, url_for, flash, session, jsonify
+from flask import Flask, render_template_string, request, redirect, url_for, session, jsonify
 import os
 import sqlite3
 from datetime import datetime
@@ -110,23 +110,29 @@ def home():
     if 'user_id' not in session:
         return redirect(url_for('login'))
     
-    # Get dashboard stats
-    conn = get_db()
-    cursor = conn.cursor()
-    
-    # Count leads by status
-    cursor.execute('SELECT status, COUNT(*) FROM leads GROUP BY status')
-    lead_stats = dict(cursor.fetchall())
-    
-    # Count tasks by status
-    cursor.execute('SELECT status, COUNT(*) FROM tasks GROUP BY status')
-    task_stats = dict(cursor.fetchall())
-    
-    # Get recent leads
-    cursor.execute('SELECT * FROM leads ORDER BY created_at DESC LIMIT 5')
-    recent_leads = cursor.fetchall()
-    
-    conn.close()
+    try:
+        # Get dashboard stats
+        conn = get_db()
+        cursor = conn.cursor()
+        
+        # Count leads by status
+        cursor.execute('SELECT status, COUNT(*) FROM leads GROUP BY status')
+        lead_stats = dict(cursor.fetchall())
+        
+        # Count tasks by status
+        cursor.execute('SELECT status, COUNT(*) FROM tasks GROUP BY status')
+        task_stats = dict(cursor.fetchall())
+        
+        # Get recent leads
+        cursor.execute('SELECT * FROM leads ORDER BY created_at DESC LIMIT 5')
+        recent_leads = cursor.fetchall()
+        
+        conn.close()
+    except Exception as e:
+        print(f"Dashboard error: {e}")
+        lead_stats = {}
+        task_stats = {}
+        recent_leads = []
     
     html = """
     <!DOCTYPE html>
@@ -317,23 +323,27 @@ def home():
 def login():
     error_message = ""
     
-    if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        
-        conn = get_db()
-        cursor = conn.cursor()
-        cursor.execute('SELECT * FROM users WHERE username = ? AND password = ?', (username, password))
-        user = cursor.fetchone()
-        conn.close()
-        
-        if user:
-            session['user_id'] = user[0]
-            session['username'] = user[1]
-            session['role'] = user[3]
-            return redirect(url_for('home'))
-        else:
-            error_message = 'Invalid username or password'
+    try:
+        if request.method == 'POST':
+            username = request.form['username']
+            password = request.form['password']
+            
+            conn = get_db()
+            cursor = conn.cursor()
+            cursor.execute('SELECT * FROM users WHERE username = ? AND password = ?', (username, password))
+            user = cursor.fetchone()
+            conn.close()
+            
+            if user:
+                session['user_id'] = user[0]
+                session['username'] = user[1]
+                session['role'] = user[3]
+                return redirect(url_for('home'))
+            else:
+                error_message = 'Invalid username or password'
+    except Exception as e:
+        print(f"Login error: {e}")
+        error_message = 'System error, please try again'
     
     html = """
     <!DOCTYPE html>
