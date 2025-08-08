@@ -2,18 +2,17 @@
   "version": 2,
   "builds": [
     {
-      "src": "wsgi.py",
+      "src": "simple_app.py",
       "use": "@vercel/python"
     }
   ],
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "/wsgi.py"
+      "dest": "/simple_app.py"
     }
   ],
   "env": {
-    "FLASK_ENV": "production",
-    "FLASK_APP": "wsgi.py"
+    "FLASK_ENV": "production"
   }
 } 
