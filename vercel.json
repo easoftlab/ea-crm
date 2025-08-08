@@ -2,18 +2,18 @@
   "version": 2,
   "builds": [
     {
-      "src": "test_vercel.py",
+      "src": "wsgi.py",
       "use": "@vercel/python"
     }
   ],
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "/test_vercel.py"
+      "dest": "/wsgi.py"
     }
   ],
   "env": {
     "FLASK_ENV": "production",
-    "FLASK_APP": "test_vercel.py"
+    "FLASK_APP": "wsgi.py"
   }
 } 

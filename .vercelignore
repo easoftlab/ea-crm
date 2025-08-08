@@ -1,52 +1,18 @@
-# Exclude large directories and files from Vercel deployment
+# Git files
+.git
+.gitignore
 
-# Development and test files
-tests/
-docs/
-portfolio_screenshots/
-migrations/
-
-# Deployment and backup files
-deploy/
-deploy_*.zip
-crm_upload_*.zip
-deploy_20250801_*/
-crm_upload_20250801_*/
-
-# Database files
-instance/
-*.db
-*.sqlite
-*.sqlite3
-
-# Python cache files
+# Python cache
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
+.Python
 
-# Node modules (if any)
-node_modules/
-
-# Large media files
-app/static/uploads/
-app/static/images/
-*.mp4
-*.avi
-*.mov
-*.wmv
-
-# Log files
-*.log
-logs/
-
-# Environment files
-.env
-.env.local
-
-# Git files
-.git/
-.gitignore
+# Virtual environments
+venv/
+env/
+ENV/
 
 # IDE files
 .vscode/
@@ -58,18 +24,45 @@ logs/
 .DS_Store
 Thumbs.db
 
+# Logs
+*.log
+logs/
+
+# Database files (will be created on Vercel)
+instance/
+*.db
+*.sqlite
+
+# Test files
+tests/
+test_*.py
+
+# Documentation
+docs/
+*.md
+README.md
+
+# Deployment files
+deploy/
+deploy_*.zip
+crm_upload_*.zip
+deploy_20250801_*/
+crm_upload_20250801_*/
+
+# Screenshots
+portfolio_screenshots/
+
 # Temporary files
 *.tmp
 *.temp
-temp/
-tmp/
 
-# Large data files
-*.csv
-*.xlsx
-*.xls
-data/
-datasets/
+# Large files
+*.zip
+*.tar.gz
 
-# Chrome profile (if exists)
-chrome_profile/ 
+# GitHub Actions
+.github/
+
+# Local configuration
+.env
+.env.local 
