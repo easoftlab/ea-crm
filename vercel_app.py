@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Simplified EA CRM for Vercel deployment
-This version removes complex dependencies and uses basic Flask
+This version supports external databases for production use
 """
 
 from flask import Flask, render_template_string, request, redirect, url_for, flash, session, jsonify
@@ -15,9 +15,39 @@ app = Flask(__name__)
 # Set secret key
 app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-here-12345')
 
-# Database setup - use in-memory database for Vercel
+# Database setup - support external databases
 def get_db():
-    """Get database connection - use in-memory for Vercel"""
+    """Get database connection - supports external databases"""
+    
+    # Check for external database URL
+    database_url = os.environ.get('DATABASE_URL')
+    
+    if database_url and database_url.startswith('postgresql://'):
+        # PostgreSQL support
+        try:
+            import psycopg2
+            conn = psycopg2.connect(database_url)
+            return conn
+        except ImportError:
+            print("PostgreSQL not available, using SQLite")
+    
+    elif database_url and database_url.startswith('mysql://'):
+        # MySQL support
+        try:
+            import pymysql
+            # Parse MySQL URL and connect
+            conn = pymysql.connect(
+                host=os.environ.get('DB_HOST', 'localhost'),
+                user=os.environ.get('DB_USER', 'root'),
+                password=os.environ.get('DB_PASSWORD', ''),
+                database=os.environ.get('DB_NAME', 'ea_crm'),
+                port=int(os.environ.get('DB_PORT', 3306))
+            )
+            return conn
+        except ImportError:
+            print("MySQL not available, using SQLite")
+    
+    # Fallback to in-memory SQLite for development
     conn = sqlite3.connect(':memory:')
     cursor = conn.cursor()
     
@@ -184,6 +214,14 @@ def home():
             .logout-btn:hover {
                 background: rgba(255,255,255,0.3);
             }
+            .db-info {
+                background: #e3f2fd;
+                color: #1976d2;
+                padding: 10px;
+                border-radius: 5px;
+                margin: 10px 0;
+                font-size: 14px;
+            }
         </style>
     </head>
     <body>
@@ -193,6 +231,10 @@ def home():
         </div>
         
         <div class="container">
+            <div class="db-info">
+                <strong>Database:</strong> {db_type} - {db_status}
+            </div>
+            
             <div class="nav-menu">
                 <a href="/">Dashboard</a>
                 <a href="/leads">Leads</a>
@@ -245,12 +287,26 @@ def home():
         </div>
         """
     
+    # Determine database type
+    database_url = os.environ.get('DATABASE_URL', '')
+    if database_url.startswith('postgresql://'):
+        db_type = "PostgreSQL"
+        db_status = "Production Ready"
+    elif database_url.startswith('mysql://'):
+        db_type = "MySQL"
+        db_status = "Production Ready"
+    else:
+        db_type = "SQLite (In-Memory)"
+        db_status = "Development Mode - Data not persistent"
+    
     return html.format(
         total_leads=total_leads,
         active_tasks=active_tasks,
         new_leads=new_leads,
         conversion_rate=conversion_rate,
-        recent_leads_html=recent_leads_html
+        recent_leads_html=recent_leads_html,
+        db_type=db_type,
+        db_status=db_status
     )
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -551,7 +607,8 @@ def health():
         "status": "healthy",
         "message": "EA CRM is running successfully",
         "version": "1.0.0",
-        "deployment": "Vercel"
+        "deployment": "Vercel",
+        "database": "External DB Ready"
     })
 
 if __name__ == "__main__":
