@@ -29,7 +29,9 @@ def get_db():
             conn = psycopg2.connect(database_url)
             return conn
         except ImportError:
-            print("PostgreSQL not available, using SQLite")
+            print("PostgreSQL driver not installed, using SQLite")
+        except Exception as e:
+            print(f"PostgreSQL connection failed: {e}, using SQLite")
     
     elif database_url and database_url.startswith('mysql://'):
         # MySQL support
@@ -45,7 +47,9 @@ def get_db():
             )
             return conn
         except ImportError:
-            print("MySQL not available, using SQLite")
+            print("MySQL driver not installed, using SQLite")
+        except Exception as e:
+            print(f"MySQL connection failed: {e}, using SQLite")
     
     # Fallback to in-memory SQLite for development
     conn = sqlite3.connect(':memory:')
