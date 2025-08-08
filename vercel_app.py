@@ -1,19 +1,48 @@
 #!/usr/bin/env python3
 """
-EA CRM with SQLite database for Vercel deployment
-Working version with database functionality
+EA CRM with Supabase database for Vercel deployment
+Production-ready version with external database
 """
 
 from flask import Flask, request, redirect
-import sqlite3
 import os
 from datetime import datetime
+from supabase import create_client, Client
 
 app = Flask(__name__)
 
-def get_db():
-    """Get database connection - in-memory SQLite for Vercel"""
+def get_supabase():
+    """Get Supabase client"""
     try:
+        url = os.environ.get('SUPABASE_URL')
+        key = os.environ.get('SUPABASE_ANON_KEY')
+        
+        if not url or not key:
+            print("Supabase credentials not found, using fallback")
+            return None
+            
+        supabase: Client = create_client(url, key)
+        return supabase
+    except Exception as e:
+        print(f"Supabase connection error: {e}")
+        return None
+
+def get_db():
+    """Get database connection - Supabase with SQLite fallback"""
+    supabase = get_supabase()
+    
+    if supabase:
+        try:
+            # Test connection
+            result = supabase.table('users').select('*').limit(1).execute()
+            return supabase
+        except Exception as e:
+            print(f"Supabase test failed: {e}")
+            return None
+    
+    # Fallback to in-memory SQLite
+    try:
+        import sqlite3
         conn = sqlite3.connect(':memory:')
         cursor = conn.cursor()
         
@@ -93,31 +122,58 @@ def login():
         username = request.form.get('username', '')
         password = request.form.get('password', '')
         
-        conn = get_db()
-        if conn:
-            cursor = conn.cursor()
-            cursor.execute('SELECT * FROM users WHERE username = ? AND password = ?', (username, password))
-            user = cursor.fetchone()
-            conn.close()
-            
-            if user:
-                return redirect('/dashboard')
-            else:
-                return """
-                <html>
-                <head><title>EA CRM - Login</title></head>
-                <body>
-                    <h1>EA CRM Login</h1>
-                    <p style="color: red;">Invalid username or password</p>
-                    <form method="POST">
-                        <p>Username: <input type="text" name="username" required></p>
-                        <p>Password: <input type="password" name="password" required></p>
-                        <p><input type="submit" value="Login"></p>
-                    </form>
-                    <p><strong>Default:</strong> admin / admin123</p>
-                </body>
-                </html>
-                """
+        db = get_db()
+        if db:
+            if isinstance(db, Client):  # Supabase
+                try:
+                    result = db.table('users').select('*').eq('username', username).eq('password', password).execute()
+                    user = result.data[0] if result.data else None
+                    
+                    if user:
+                        return redirect('/dashboard')
+                    else:
+                        return """
+                        <html>
+                        <head><title>EA CRM - Login</title></head>
+                        <body>
+                            <h1>EA CRM Login</h1>
+                            <p style="color: red;">Invalid username or password</p>
+                            <form method="POST">
+                                <p>Username: <input type="text" name="username" required></p>
+                                <p>Password: <input type="password" name="password" required></p>
+                                <p><input type="submit" value="Login"></p>
+                            </form>
+                            <p><strong>Default:</strong> admin / admin123</p>
+                        </body>
+                        </html>
+                        """
+                except Exception as e:
+                    print(f"Supabase login error: {e}")
+                    return "Database error"
+            else:  # SQLite
+                cursor = db.cursor()
+                cursor.execute('SELECT * FROM users WHERE username = ? AND password = ?', (username, password))
+                user = cursor.fetchone()
+                db.close()
+                
+                if user:
+                    return redirect('/dashboard')
+                else:
+                    return """
+                    <html>
+                    <head><title>EA CRM - Login</title></head>
+                    <body>
+                        <h1>EA CRM Login</h1>
+                        <p style="color: red;">Invalid username or password</p>
+                        <form method="POST">
+                            <p>Username: <input type="text" name="username" required></p>
+                            <p>Password: <input type="password" name="password" required></p>
+                            <p><input type="submit" value="Login"></p>
+                        </form>
+                        <p><strong>Default:</strong> admin / admin123</p>
+                    </body>
+                    </html>
+                    """
     
     return """
     <html>
@@ -136,33 +192,52 @@ def login():
 
 @app.route('/dashboard')
 def dashboard():
-    conn = get_db()
-    if not conn:
+    db = get_db()
+    if not db:
         return "Database error"
     
-    cursor = conn.cursor()
-    
-    # Get stats
-    cursor.execute('SELECT COUNT(*) FROM leads')
-    total_leads = cursor.fetchone()[0]
-    
-    cursor.execute('SELECT COUNT(*) FROM leads WHERE status = "new"')
-    new_leads = cursor.fetchone()[0]
-    
-    cursor.execute('SELECT COUNT(*) FROM tasks WHERE status = "pending"')
-    pending_tasks = cursor.fetchone()[0]
-    
-    cursor.execute('SELECT COUNT(*) FROM tasks WHERE status = "completed"')
-    completed_tasks = cursor.fetchone()[0]
-    
-    conn.close()
+    if isinstance(db, Client):  # Supabase
+        try:
+            # Get stats
+            leads_result = db.table('leads').select('*').execute()
+            total_leads = len(leads_result.data)
+            
+            new_leads_result = db.table('leads').select('*').eq('status', 'new').execute()
+            new_leads = len(new_leads_result.data)
+            
+            tasks_result = db.table('tasks').select('*').eq('status', 'pending').execute()
+            pending_tasks = len(tasks_result.data)
+            
+            completed_tasks_result = db.table('tasks').select('*').eq('status', 'completed').execute()
+            completed_tasks = len(completed_tasks_result.data)
+            
+        except Exception as e:
+            print(f"Supabase dashboard error: {e}")
+            total_leads = new_leads = pending_tasks = completed_tasks = 0
+    else:  # SQLite
+        cursor = db.cursor()
+        
+        # Get stats
+        cursor.execute('SELECT COUNT(*) FROM leads')
+        total_leads = cursor.fetchone()[0]
+        
+        cursor.execute('SELECT COUNT(*) FROM leads WHERE status = "new"')
+        new_leads = cursor.fetchone()[0]
+        
+        cursor.execute('SELECT COUNT(*) FROM tasks WHERE status = "pending"')
+        pending_tasks = cursor.fetchone()[0]
+        
+        cursor.execute('SELECT COUNT(*) FROM tasks WHERE status = "completed"')
+        completed_tasks = cursor.fetchone()[0]
+        
+        db.close()
     
     return f"""
     <html>
     <head><title>EA CRM - Dashboard</title></head>
     <body>
         <h1>EA CRM Dashboard</h1>
-        <p>✅ Success! The CRM is working with database!</p>
+        <p>✅ Success! The CRM is working with {'Supabase' if isinstance(db, Client) else 'SQLite'} database!</p>
         <p><a href="/leads">Leads</a> | <a href="/tasks">Tasks</a> | <a href="/add_lead">Add Lead</a> | <a href="/add_task">Add Task</a> | <a href="/">Logout</a></p>
         
         <h3>Stats:</h3>
@@ -173,13 +248,13 @@ def dashboard():
             <li>Completed Tasks: {completed_tasks}</li>
         </ul>
         
-        <h3>Recent Activity:</h3>
-        <p>Database is working! You can now:</p>
+        <h3>Database Status:</h3>
+        <p>Currently using: {'Supabase (Production)' if isinstance(db, Client) else 'SQLite (Development)'}</p>
         <ul>
             <li>✅ View and manage leads</li>
             <li>✅ Create and track tasks</li>
-            <li>✅ Store data persistently (in-memory for now)</li>
-            <li>🔄 Next: Add external database for permanent storage</li>
+            <li>✅ {'Permanent storage with Supabase' if isinstance(db, Client) else 'Temporary storage (in-memory)'}</li>
+            <li>🔄 Next: Add more features</li>
         </ul>
     </body>
     </html>
@@ -187,27 +262,47 @@ def dashboard():
 
 @app.route('/leads')
 def leads():
-    conn = get_db()
-    if not conn:
+    db = get_db()
+    if not db:
         return "Database error"
     
-    cursor = conn.cursor()
-    cursor.execute('SELECT * FROM leads ORDER BY created_at DESC')
-    leads = cursor.fetchall()
-    conn.close()
+    if isinstance(db, Client):  # Supabase
+        try:
+            result = db.table('leads').select('*').order('created_at', desc=True).execute()
+            leads = result.data
+        except Exception as e:
+            print(f"Supabase leads error: {e}")
+            leads = []
+    else:  # SQLite
+        cursor = db.cursor()
+        cursor.execute('SELECT * FROM leads ORDER BY created_at DESC')
+        leads = cursor.fetchall()
+        db.close()
     
     leads_html = ""
     for lead in leads:
-        leads_html += f"""
-        <tr>
-            <td>{lead[1]}</td>
-            <td>{lead[2]}</td>
-            <td>{lead[3]}</td>
-            <td>{lead[4]}</td>
-            <td>{lead[5]}</td>
-            <td>{lead[6]}</td>
-        </tr>
-        """
+        if isinstance(db, Client):  # Supabase data structure
+            leads_html += f"""
+            <tr>
+                <td>{lead.get('name', '')}</td>
+                <td>{lead.get('email', '')}</td>
+                <td>{lead.get('phone', '')}</td>
+                <td>{lead.get('company', '')}</td>
+                <td>{lead.get('status', '')}</td>
+                <td>{lead.get('source', '')}</td>
+            </tr>
+            """
+        else:  # SQLite data structure
+            leads_html += f"""
+            <tr>
+                <td>{lead[1]}</td>
+                <td>{lead[2]}</td>
+                <td>{lead[3]}</td>
+                <td>{lead[4]}</td>
+                <td>{lead[5]}</td>
+                <td>{lead[6]}</td>
+            </tr>
+            """
     
     return f"""
     <html>
@@ -229,6 +324,7 @@ def leads():
         </table>
         
         <p><strong>Total Leads:</strong> {len(leads)}</p>
+        <p><strong>Database:</strong> {'Supabase' if isinstance(db, Client) else 'SQLite'}</p>
     </body>
     </html>
     """
@@ -243,16 +339,31 @@ def add_lead():
         source = request.form.get('source', '')
         notes = request.form.get('notes', '')
         
-        conn = get_db()
-        if conn:
-            cursor = conn.cursor()
-            cursor.execute('''
-                INSERT INTO leads (name, email, phone, company, source, notes)
-                VALUES (?, ?, ?, ?, ?, ?)
-            ''', (name, email, phone, company, source, notes))
-            conn.commit()
-            conn.close()
-            return redirect('/leads')
+        db = get_db()
+        if db:
+            if isinstance(db, Client):  # Supabase
+                try:
+                    db.table('leads').insert({
+                        'name': name,
+                        'email': email,
+                        'phone': phone,
+                        'company': company,
+                        'source': source,
+                        'notes': notes
+                    }).execute()
+                    return redirect('/leads')
+                except Exception as e:
+                    print(f"Supabase add lead error: {e}")
+                    return "Database error"
+            else:  # SQLite
+                cursor = db.cursor()
+                cursor.execute('''
+                    INSERT INTO leads (name, email, phone, company, source, notes)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                ''', (name, email, phone, company, source, notes))
+                db.commit()
+                db.close()
+                return redirect('/leads')
     
     return """
     <html>
@@ -276,27 +387,47 @@ def add_lead():
 
 @app.route('/tasks')
 def tasks():
-    conn = get_db()
-    if not conn:
+    db = get_db()
+    if not db:
         return "Database error"
     
-    cursor = conn.cursor()
-    cursor.execute('SELECT * FROM tasks ORDER BY created_at DESC')
-    tasks = cursor.fetchall()
-    conn.close()
+    if isinstance(db, Client):  # Supabase
+        try:
+            result = db.table('tasks').select('*').order('created_at', desc=True).execute()
+            tasks = result.data
+        except Exception as e:
+            print(f"Supabase tasks error: {e}")
+            tasks = []
+    else:  # SQLite
+        cursor = db.cursor()
+        cursor.execute('SELECT * FROM tasks ORDER BY created_at DESC')
+        tasks = cursor.fetchall()
+        db.close()
     
     tasks_html = ""
     for task in tasks:
-        tasks_html += f"""
-        <tr>
-            <td>{task[1]}</td>
-            <td>{task[2]}</td>
-            <td>{task[3]}</td>
-            <td>{task[4]}</td>
-            <td>{task[5]}</td>
-            <td>{task[6]}</td>
-        </tr>
-        """
+        if isinstance(db, Client):  # Supabase data structure
+            tasks_html += f"""
+            <tr>
+                <td>{task.get('title', '')}</td>
+                <td>{task.get('description', '')}</td>
+                <td>{task.get('status', '')}</td>
+                <td>{task.get('priority', '')}</td>
+                <td>{task.get('due_date', '')}</td>
+                <td>{task.get('assigned_to', '')}</td>
+            </tr>
+            """
+        else:  # SQLite data structure
+            tasks_html += f"""
+            <tr>
+                <td>{task[1]}</td>
+                <td>{task[2]}</td>
+                <td>{task[3]}</td>
+                <td>{task[4]}</td>
+                <td>{task[5]}</td>
+                <td>{task[6]}</td>
+            </tr>
+            """
     
     return f"""
     <html>
@@ -318,6 +449,7 @@ def tasks():
         </table>
         
         <p><strong>Total Tasks:</strong> {len(tasks)}</p>
+        <p><strong>Database:</strong> {'Supabase' if isinstance(db, Client) else 'SQLite'}</p>
     </body>
     </html>
     """
@@ -331,16 +463,30 @@ def add_task():
         due_date = request.form.get('due_date', '')
         assigned_to = request.form.get('assigned_to', 'admin')
         
-        conn = get_db()
-        if conn:
-            cursor = conn.cursor()
-            cursor.execute('''
-                INSERT INTO tasks (title, description, priority, due_date, assigned_to)
-                VALUES (?, ?, ?, ?, ?)
-            ''', (title, description, priority, due_date, assigned_to))
-            conn.commit()
-            conn.close()
-            return redirect('/tasks')
+        db = get_db()
+        if db:
+            if isinstance(db, Client):  # Supabase
+                try:
+                    db.table('tasks').insert({
+                        'title': title,
+                        'description': description,
+                        'priority': priority,
+                        'due_date': due_date,
+                        'assigned_to': assigned_to
+                    }).execute()
+                    return redirect('/tasks')
+                except Exception as e:
+                    print(f"Supabase add task error: {e}")
+                    return "Database error"
+            else:  # SQLite
+                cursor = db.cursor()
+                cursor.execute('''
+                    INSERT INTO tasks (title, description, priority, due_date, assigned_to)
+                    VALUES (?, ?, ?, ?, ?)
+                ''', (title, description, priority, due_date, assigned_to))
+                db.commit()
+                db.close()
+                return redirect('/tasks')
     
     return """
     <html>
