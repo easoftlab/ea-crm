@@ -51,7 +51,7 @@ def get_db():
         except Exception as e:
             print(f"MySQL connection failed: {e}, using SQLite")
     
-    # Fallback to in-memory SQLite for development
+        # Fallback to in-memory SQLite for development
     conn = sqlite3.connect(':memory:')
     cursor = conn.cursor()
     
@@ -315,6 +315,8 @@ def home():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    error_message = ""
+    
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
@@ -331,7 +333,7 @@ def login():
             session['role'] = user[3]
             return redirect(url_for('home'))
         else:
-            flash('Invalid username or password')
+            error_message = 'Invalid username or password'
     
     html = """
     <!DOCTYPE html>
@@ -424,9 +426,8 @@ def login():
     """
     
     flash_messages = ""
-    if 'flash' in session:
-        flash_messages = f'<div class="flash">{session["flash"]}</div>'
-        session.pop('flash')
+    if error_message:
+        flash_messages = f'<div class="flash">{error_message}</div>'
     
     return html.format(flash_messages=flash_messages)
 
